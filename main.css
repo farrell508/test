@@ -471,6 +471,6 @@ body.fullscreen .fullscreen-btn {
   .magnet.color-red    { background: linear-gradient(135deg, #ff4444, #cc0000); }
   .magnet.color-orange { background: linear-gradient(135deg, #ff8c1a, #ff5e00); }
   .magnet.color-yellow { background: linear-gradient(135deg, #ffd84d, #ffb300); color:#333; }
-  .magnet.color-green  { background: linear-gradient(135deg, #3bd86f, #0fb957); }
+  .magnet.color-green  { background: linear-gradient(135deg, #0e8837, #0fb957); }
   .magnet.color-blue   { background: linear-gradient(135deg, #3aa1ff, #0066ff); }
   .magnet.color-purple { background: linear-gradient(135deg, #b36bff, #7a2cff); }

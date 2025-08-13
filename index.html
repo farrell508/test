@@ -567,7 +567,7 @@
       document.getElementById('date').textContent =
         `${months[now.getMonth()]} ${now.getDate()}일 ${days[now.getDay()]}`;
       tstat = document.getElementById('tstat');
-      if ((h < 8 || (h == 8 && m < 10)) {
+      if (h < 8 || (h == 8 && m < 10)) {
           tstat.textContent = '아침 시간';
       } else if (h == 8 && m >= 10 && m < 50) {
           tstat.textContent = '아침 자습';
@@ -585,11 +585,11 @@
           tstat.textContent = '쉬는 시간';
       } else if ((h == 21 && m >= 30) || (h == 22 && m < 50)) {
           tstat.textContent = '야자 2타임';
-      } else if ((h == 22 && m == 49)) {
+      } else if (h == 22 && m == 49) {
           if (s >= 50) {
               tstat.textContent = 60 - s;
           }
-      } else if ((h == 22 && m == 49)) {
+      } else if (h == 22 && m >= 50) {
           tstat.textContent = '끝.';
       }
       const hoursDeg = (now.getHours() % 12) * 30 + (now.getMinutes() * 0.5);

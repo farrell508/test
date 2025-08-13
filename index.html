@@ -214,18 +214,25 @@
 
     /* ===================== 출결 계산 ===================== */
     function updateAttendance() {
-      const total = document.querySelectorAll('.magnet').length || 30;
-      const excluded = new Set(['toilet', 'hallway']); // 화장실(물), 복도 제외
+      // 자리표(.placeholder) 제외한 실제 학생만 집계
+      const total = document.querySelectorAll('.magnet:not(.placeholder)').length;
+    
+      // 화장실/복도를 결원에서 제외하려면 그대로 두고,
+      // 결원에 포함시키려면 [] 로 바꾸세요.
+      const excluded = new Set(['toilet', 'hallway']);
+    
       let absentCount = 0;
-
       document.querySelectorAll('.board-section').forEach(section => {
         const cat = section.dataset.category;
-        if (!excluded.has(cat)) {
-          const content = section.querySelector('.section-content');
-          if (content) absentCount += content.querySelectorAll('.magnet').length;
-        }
+        const content = section.querySelector('.section-content');
+        if (!content) return;
+    
+        const n = content.querySelectorAll('.magnet:not(.placeholder)').length;
+        if (!excluded.has(cat)) absentCount += n;
       });
-
+    
+      // 표기값도 항상 동기화
+      document.getElementById('total-count').textContent   = `${total}명`;
       document.getElementById('absent-count').textContent  = `${absentCount}명`;
       document.getElementById('present-count').textContent = `${total - absentCount}명`;
     }

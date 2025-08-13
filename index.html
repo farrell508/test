@@ -567,8 +567,16 @@
       document.getElementById('date').textContent =
         `${months[now.getMonth()]} ${now.getDate()}일 ${days[now.getDay()]}`;
       tstat = document.getElementById('tstat');
-      if ((h == 17 && m >= 10) || (h == 18 && m < 35)) {
-          tstat.textContent = '방과후';
+      if ((h < 8 || (h == 8 && m < 10)) {
+          tstat.textContent = '아침 시간';
+      } else if (h == 8 && m >= 10 && m < 50) {
+          tstat.textContent = '아침 자습';
+      }else if ((h == 17 && (m >= 10 && m < 50)) {
+          tstat.textContent = '방과후 1타임';
+      } else if (h == 17 && (m >= 50 && m < 55)) {
+        tstat.textContent = '쉬는 시간';
+      } else if ((h == 17 && m >= 55) || (h == 18 && m < 35)) {
+          tstat.textContent = '방과후 2타임';
       } else if ((h == 18 && m >= 35) || (h == 19 && m < 50)) {
           tstat.textContent = '저녁 시간';
       } else if ((h == 19 && m >= 50) || h == 20 || (h == 21 && m < 10)) {
@@ -577,7 +585,11 @@
           tstat.textContent = '쉬는 시간';
       } else if ((h == 21 && m >= 30) || (h == 22 && m < 50)) {
           tstat.textContent = '야자 2타임';
-      } else if ((h == 22 && m >= 50)) {
+      } else if ((h == 22 && m == 49)) {
+          if (s >= 50) {
+              tstat.textContent = 60 - s;
+          }
+      } else if ((h == 22 && m == 49)) {
           tstat.textContent = '끝.';
       }
       const hoursDeg = (now.getHours() % 12) * 30 + (now.getMinutes() * 0.5);

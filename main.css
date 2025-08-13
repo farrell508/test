@@ -1,0 +1,455 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    min-height: 100vh;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    padding: 40px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Magnet Container */
+.magnet-container {
+    border-radius: 10px ;
+    position: absolute;
+    left: 40px;
+    top: 40px;
+    bottom: 40px;
+    width: calc(100% - 400px);
+    pointer-events: none;
+}
+
+.magnet {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #ff4444, #cc0000);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: grab;
+    user-select: none;
+    box-shadow: 
+        0 4px 15px rgba(255, 68, 68, 0.3),
+        0 2px 5px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.1s, box-shadow 0.2s;
+    pointer-events: auto;
+    touch-action: none;
+    z-index: 100;
+}
+
+.magnet:hover {
+    transform: scale(1.05);
+    box-shadow: 
+        0 6px 20px rgba(255, 68, 68, 0.4),
+        0 3px 8px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.magnet.dragging {
+    cursor: grabbing;
+    transform: scale(1.1);
+    z-index: 1000;
+    box-shadow: 
+        0 10px 30px rgba(255, 68, 68, 0.5),
+        0 5px 15px rgba(0, 0, 0, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.magnet.attached {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    margin: 4px;
+}
+
+.clock-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    left: -5%;
+    gap: 40px;
+    animation: fadeIn 1s ease-out;
+    position: relative;
+    z-index: 100;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Analog Clock */
+.analog-clock {
+    width: 200px;
+    height: 200px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    position: relative;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02), transparent);
+    box-shadow: 
+        0 0 40px rgba(255, 255, 255, 0.05),
+        inset 0 0 20px rgba(255, 255, 255, 0.02);
+}
+
+.clock-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: 50% 100%;
+    transform: translateX(-50%);
+    border-radius: 10px;
+}
+
+.hour-hand {
+    width: 3px;
+    height: 50px;
+    background: linear-gradient(to top, #fff 90%, transparent);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.minute-hand {
+    width: 2px;
+    height: 65px;
+    background: linear-gradient(to top, #fff 95%, transparent);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.second-hand {
+    width: 1px;
+    height: 70px;
+    background: linear-gradient(to top, #ff3e3e 95%, transparent);
+    box-shadow: 0 0 4px rgba(255, 62, 62, 0.5);
+}
+
+/* Clock markers */
+.marker {
+    position: absolute;
+    width: 1px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    left: 50%;
+    transform-origin: 50% 100px;
+    transform: translateX(-50%);
+}
+
+.marker.major {
+    height: 12px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Digital Clock */
+.digital-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.time-display {
+    font-size: 48px;
+    font-weight: 200;
+    color: #fff;
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    font-variant-numeric: tabular-nums;
+}
+
+.date-display {
+    font-size: 25px;
+    color: rgba(255, 255, 255, 0.794);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 300;
+}
+
+.seconds {
+    color: #ff3e3e;
+    font-size: 24px;
+    margin-left: 8px;
+    font-weight: 100;
+}
+
+/* Subtle animation for digital time */
+.time-display {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.9;
+    }
+}
+/* Fullscreen Button */
+.fullscreen-btn {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 30px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+}
+
+.fullscreen-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+    transform: translateX(-50%) scale(1.05);
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+}
+
+/* Exit Fullscreen Button */
+.exit-fullscreen-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    z-index: 10000;
+}
+
+.exit-fullscreen-btn:hover {
+    background: rgba(255, 68, 68, 0.8);
+    transform: scale(1.1);
+}
+
+body.fullscreen .exit-fullscreen-btn {
+    display: flex;
+}
+
+body.fullscreen .fullscreen-btn {
+    display: none;
+}
+
+/* Board Container */
+.board-container {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 820px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 30px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.board-title {
+    text-align: center;
+    color: rgb(255, 255, 255);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+}
+
+.board-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.board-section {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 250px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.board-section:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.board-section.drag-over {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 68, 68, 0.5);
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
+}
+
+.section-title {
+    color: rgba(255, 255, 255, 0.925);
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-content {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    line-height: 1.5;
+    min-height: 70px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-content: flex-start;
+}
+/* Attendance Info */
+.attendance-info {
+    position: fixed;
+    right: 160px;
+    bottom: 150px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 35px;
+    line-height: 1.8;
+    letter-spacing: 1px;
+    text-align: right;
+    z-index: 100;
+}
+
+.attendance-info .label {
+    color: rgba(255, 255, 255, 0.4);
+    margin-right: 8px;
+}
+
+.attendance-info .number {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+}
+
+.attendance-info .absent-count {
+    color: #ff3e3e;
+}
+
+
+.magnet-outline {
+    position: absolute;
+    border: 0.2px solid #fff;
+    border-radius: 12px;
+    pointer-events: none;
+    opacity: 0.2;
+    z-index: 50;
+    /* 보기 좋게 살짝 부드럽게(선택) */
+    transition: left .08s, top .08s, width .08s, height .08s;
+  }
+  
+
+  .dialog-overlay[hidden] { display: none; }
+  .dialog-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    display: grid; place-items: center;
+    background: rgba(0,0,0,0.45);
+  }
+  .dialog {
+    width: min(1040px, 184vw);
+    height: 40%;
+    background: rgba(20,20,20,0.95);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 18px;
+    color: #fff;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  }
+  .dialog-title { font-size: 30px; font-weight: 600; margin-bottom: 10px; }
+  .dialog textarea {
+    width: 100%; resize: vertical; min-height: 65%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px; color: #fff; padding: 10px; outline: none;
+  }
+  .dialog .actions {
+    display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;
+  }
+  .dialog .actions button {
+    font-size: 20px;      /* 글자 크기 */
+    padding: 12px 22px;   /* 안쪽 여백(가로/세로) */
+    min-height: 44px;     /* 터치 타깃 권장 높이 */
+    min-width: 110px;     /* 버튼 최소 너비 */
+    border-radius: 10px;  /* 모서리 조금 더 둥글게(선택) */
+  }
+  .dialog .actions .primary {
+    background: #ff3e3e; border-color: transparent;
+  }
+  
+  /* 이유 툴팁 */
+  #reasonTooltip {
+    position: fixed; z-index: 10001;
+    max-width: 260px; padding: 10px 12px; border-radius: 10px;
+    background: rgba(20,20,20,0.95);
+    color: #fff; font-size: 25px; line-height: 1.45;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  }
+  
+  /* (선택) 이유가 달린 자석 표시 배지 */
+  .magnet.has-reason::after {
+    content: "i";
+    position: absolute; right: -4px; top: -4px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #ff3e3e; color: #fff; font-size: 12px; font-weight: 700;
+    display: grid; place-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  #reasonPanel {
+    transform: scale(1.3);
+    transform-origin: top left; /* 왼쪽 위 기준으로 커지게 */
+  }

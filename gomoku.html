@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>렌주 (Renju) - 일본식 오목</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 900px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .current-player {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .reset-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        }
+
+        .board-container {
+            background: #DEB887;
+            border: 3px solid #654321;
+            border-radius: 8px;
+            padding: 20px;
+            display: inline-block;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+            margin: 20px auto;
+        }
+
+        .board {
+            position: relative;
+            width: 560px;
+            height: 560px;
+        }
+
+        /* 격자선 */
+        .grid-lines {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 520px;
+            height: 520px;
+            pointer-events: none;
+        }
+
+        .h-line {
+            position: absolute;
+            width: 520px;
+            height: 2px;
+            background: #8B4513;
+            left: 0;
+        }
+
+        .v-line {
+            position: absolute;
+            width: 2px;
+            height: 520px;
+            background: #8B4513;
+            top: 0;
+        }
+
+        /* 교차점 */
+        .intersection {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .intersection:hover::before {
+            content: '';
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            position: absolute;
+        }
+
+        .stone {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            position: absolute;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+
+        .stone.black {
+            background: radial-gradient(circle at 30% 30%, #555 0%, #000 100%);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+        }
+
+        .stone.white {
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #ddd 100%);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        .forbidden-mark {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 11;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: red;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .forbidden-mark::before {
+            content: '✕';
+        }
+
+        .winner-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: bounceIn 0.6s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            70% { transform: translate(-50%, -50%) scale(0.9); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+        }
+
+        .rules {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .rules h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .rule-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #1976d2;
+        }
+
+        .rule-section h4 {
+            margin-top: 0;
+            color: #1565c0;
+        }
+
+        .stone-preview {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 5px;
+            vertical-align: middle;
+        }
+
+        .black-stone {
+            background: radial-gradient(circle at 30% 30%, #555 0%, #000 100%);
+        }
+
+        .white-stone {
+            background: radial-gradient(circle at 30% 30%, #fff 0%, #ddd 100%);
+            border: 1px solid #ccc;
+        }
+
+        /* 화점 표시 */
+        .star-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #654321;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .forbidden-info {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎌 렌주 (連珠/Renju) 🔴⚫</h1>
+        
+        <div class="game-info">
+            <div class="current-player">
+                현재 턴: <span class="stone-preview black-stone"></span> 흑돌 차례
+            </div>
+            <button class="reset-btn" onclick="resetGame()">🔄 다시 시작</button>
+        </div>
+
+        <div class="board-container">
+            <div class="board" id="board"></div>
+        </div>
+
+        <div class="rules">
+            <h3>📋 렌주 게임 규칙</h3>
+            <div class="rules-grid">
+                <div class="rule-section">
+                    <h4>기본 규칙</h4>
+                    <ul>
+                        <li><span class="stone-preview black-stone"></span> <strong>흑돌</strong>이 먼저 시작</li>
+                        <li>정확히 <strong>5개</strong>를 일직선으로 만들면 승리</li>
+                        <li>가로, 세로, 대각선 모두 가능</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h4>흑돌 금수 (✕ 표시)</h4>
+                    <ul>
+                        <li><strong>3-3 금수:</strong> 열린 3이 동시에 2개 생성</li>
+                        <li><strong>4-4 금수:</strong> 4가 동시에 2개 생성</li>
+                        <li><strong>장목(6목 이상):</strong> 6개 이상 연속</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="forbidden-info">
+                <strong>⚠️ 중요:</strong> 백돌은 모든 금수가 허용됩니다! 백의 장목(6목 이상)은 승리로 인정됩니다.
+                흑이 금수와 5를 동시에 만들면 금수를 무시하고 흑이 승리합니다.
+            </div>
+            
+            <div style="margin-top: 15px; padding: 10px; background: #f0f8ff; border-radius: 5px;">
+                <strong>📌 렌주 용어 설명:</strong><br>
+                • <strong>열린 3:</strong> 한 수를 더 두면 '열린 4'를 만들 수 있는 상태<br>
+                • <strong>열린 4:</strong> 양쪽이 막히지 않은 4개 연속<br>
+                • <strong>4-3:</strong> 금수가 아님! 강력한 승리 패턴
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let board = Array(15).fill().map(() => Array(15).fill(0));
+        let currentPlayer = 1; // 1: 흑돌(선공), 2: 백돌(후공)
+        let gameWon = false;
+        let forbiddenPositions = new Set();
+        const CELL_SIZE = 37.14; // 520 / 14 = 37.14 (14칸 간격)
+
+        function initBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            
+            // 격자선 그리기
+            const gridLines = document.createElement('div');
+            gridLines.className = 'grid-lines';
+            
+            // 가로선 (15개)
+            for (let i = 0; i < 15; i++) {
+                const line = document.createElement('div');
+                line.className = 'h-line';
+                line.style.top = (i * CELL_SIZE) + 'px';
+                gridLines.appendChild(line);
+            }
+            
+            // 세로선 (15개)
+            for (let i = 0; i < 15; i++) {
+                const line = document.createElement('div');
+                line.className = 'v-line';
+                line.style.left = (i * CELL_SIZE) + 'px';
+                gridLines.appendChild(line);
+            }
+            
+            boardElement.appendChild(gridLines);
+            
+            // 화점 추가 (오목판의 표준 화점 위치)
+            const starPoints = [[3,3], [3,11], [7,7], [11,3], [11,11]];
+            starPoints.forEach(([row, col]) => {
+                const star = document.createElement('div');
+                star.className = 'star-point';
+                star.style.left = (col * CELL_SIZE + 20 - 4) + 'px';
+                star.style.top = (row * CELL_SIZE + 20 - 4) + 'px';
+                boardElement.appendChild(star);
+            });
+            
+            // 교차점 만들기 (15x15 = 225개)
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    const intersection = document.createElement('div');
+                    intersection.className = 'intersection';
+                    intersection.dataset.row = i;
+                    intersection.dataset.col = j;
+                    intersection.style.left = (j * CELL_SIZE) + 'px';
+                    intersection.style.top = (i * CELL_SIZE) + 'px';
+                    intersection.onclick = () => makeMove(i, j);
+                    boardElement.appendChild(intersection);
+                }
+            }
+            
+            updateForbiddenMoves();
+        }
+
+        function makeMove(row, col) {
+            if (gameWon || board[row][col] !== 0) return;
+            
+            // 흑돌(선공)인 경우 금수 체크
+            if (currentPlayer === 1 && isForbiddenMove(row, col)) {
+                alert('금수 위치입니다! 다른 곳에 두세요.');
+                return;
+            }
+
+            board[row][col] = currentPlayer;
+            placeStone(row, col, currentPlayer);
+            
+            // 승리 체크
+            if (checkWin(row, col)) {
+                gameWon = true;
+                showWinner(currentPlayer);
+                return;
+            }
+            
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateCurrentPlayer();
+            updateForbiddenMoves();
+        }
+
+        function placeStone(row, col, player) {
+            const boardElement = document.getElementById('board');
+            const stone = document.createElement('div');
+            stone.className = player === 1 ? 'stone black' : 'stone white';
+            stone.style.left = (col * CELL_SIZE + 4) + 'px';
+            stone.style.top = (row * CELL_SIZE + 4) + 'px';
+            stone.dataset.row = row;
+            stone.dataset.col = col;
+            boardElement.appendChild(stone);
+        }
+
+        function updateForbiddenMoves() {
+            // 기존 금수 표시 제거
+            const oldMarks = document.querySelectorAll('.forbidden-mark');
+            oldMarks.forEach(mark => mark.remove());
+            
+            forbiddenPositions.clear();
+            
+            if (currentPlayer !== 1) return; // 백돌에게는 금수 적용 안됨
+            
+            const boardElement = document.getElementById('board');
+            
+            for (let i = 0; i < 15; i++) {
+                for (let j = 0; j < 15; j++) {
+                    if (board[i][j] === 0 && isForbiddenMove(i, j)) {
+                        forbiddenPositions.add(`${i}-${j}`);
+                        
+                        const mark = document.createElement('div');
+                        mark.className = 'forbidden-mark';
+                        mark.style.left = (j * CELL_SIZE) + 'px';
+                        mark.style.top = (i * CELL_SIZE) + 'px';
+                        boardElement.appendChild(mark);
+                    }
+                }
+            }
+        }
+
+        function isForbiddenMove(row, col) {
+            if (currentPlayer !== 1) return false; // 백돌에게는 금수 적용 안됨
+            
+            // 임시로 돌을 놓고 체크
+            board[row][col] = 1;
+            
+            // 5를 만드는 경우는 금수가 아님
+            if (makesFive(row, col)) {
+                board[row][col] = 0;
+                return false;
+            }
+            
+            const is33 = checkDoubleThree(row, col);
+            const is44 = checkDoubleFour(row, col);
+            const isOverline = checkOverline(row, col);
+            
+            board[row][col] = 0; // 원상복구
+            
+            return is33 || is44 || isOverline;
+        }
+
+        function makesFive(row, col) {
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            
+            for (let [dx, dy] of directions) {
+                let count = 1;
+                count += countStones(row, col, dx, dy, 1);
+                count += countStones(row, col, -dx, -dy, 1);
+                
+                if (count === 5) return true;
+            }
+            
+            return false;
+        }
+
+        function checkDoubleThree(row, col) {
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            let openThreeCount = 0;
+            
+            for (let [dx, dy] of directions) {
+                if (isOpenThree(row, col, dx, dy)) {
+                    openThreeCount++;
+                }
+            }
+            
+            return openThreeCount >= 2;
+        }
+
+        function isOpenThree(row, col, dx, dy) {
+            // 열린 3: 한 수를 더 두면 열린 4를 만들 수 있는 상태
+            // 현재 위치에서 이 방향으로 3을 만들고, 그 3이 열린 4로 발전 가능한지 체크
+            
+            let stones = [];
+            let empties = [];
+            
+            // 현재 위치 포함해서 양방향 5칸씩 체크
+            for (let i = -5; i <= 5; i++) {
+                const newRow = row + i * dx;
+                const newCol = col + i * dy;
+                
+                if (newRow >= 0 && newRow < 15 && newCol >= 0 && newCol < 15) {
+                    if (i === 0) {
+                        stones.push({row: newRow, col: newCol, idx: i});
+                    } else if (board[newRow][newCol] === 1) {
+                        stones.push({row: newRow, col: newCol, idx: i});
+                    } else if (board[newRow][newCol] === 0) {
+                        empties.push({row: newRow, col: newCol, idx: i});
+                    }
+                }
+            }
+            
+            // 정확히 3개의 돌이 있어야 함
+            if (stones.length !== 3) return false;
+            
+            // 3개 돌의 패턴 확인 (연속 또는 한 칸 띄어진 패턴)
+            stones.sort((a, b) => a.idx - b.idx);
+            const span = stones[2].idx - stones[0].idx;
+            
+            // 3개가 5칸 이내에 있어야 함
+            if (span > 4) return false;
+            
+            // 이 3이 열린 4를 만들 수 있는지 체크
+            // 양쪽에 빈 공간이 있고, 한 수를 더 두면 열린 4가 되는지 확인
+            for (let empty of empties) {
+                board[empty.row][empty.col] = 1;
+                
+                // 이 위치에서 열린 4인지 체크
+                if (isOpenFour(empty.row, empty.col, dx, dy)) {
+                    board[empty.row][empty.col] = 0;
+                    
+                    // 추가로 그 위치가 금수가 아닌지 체크 (거짓 금수 방지)
+                    board[row][col] = 0; // 원래 위치 임시 제거
+                    const wouldBeForbidden = isForbiddenMoveSimple(empty.row, empty.col);
+                    board[row][col] = 1; // 원래 위치 복구
+                    
+                    if (!wouldBeForbidden) {
+                        return true;
+                    }
+                }
+                
+                board[empty.row][empty.col] = 0;
+            }
+            
+            return false;
+        }
+
+        function isForbiddenMoveSimple(row, col) {
+            // 거짓 금수 체크용 간단한 금수 체크 (재귀 방지)
+            board[row][col] = 1;
+            
+            const is44 = checkDoubleFour(row, col);
+            const isOverline = checkOverline(row, col);
+            
+            board[row][col] = 0;
+            
+            return is44 || isOverline;
+        }
+
+        function isOpenFour(row, col, dx, dy) {
+            // 열린 4: 양쪽이 막히지 않은 4개 연속
+            let count = 1;
+            let leftOpen = false;
+            let rightOpen = false;
+            
+            // 정방향 체크
+            let i = 1;
+            while (i <= 4) {
+                const newRow = row + i * dx;
+                const newCol = col + i * dy;
+                
+                if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
+                
+                if (board[newRow][newCol] === 1) {
+                    count++;
+                } else if (board[newRow][newCol] === 0 && count < 4) {
+                    break;
+                } else if (board[newRow][newCol] === 0 && count === 4) {
+                    rightOpen = true;
+                    break;
+                } else {
+                    break;
+                }
+                i++;
+            }
+            
+            // 역방향 체크
+            i = 1;
+            while (i <= 4) {
+                const newRow = row - i * dx;
+                const newCol = col - i * dy;
+                
+                if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
+                
+                if (board[newRow][newCol] === 1) {
+                    count++;
+                } else if (board[newRow][newCol] === 0 && count < 4) {
+                    break;
+                } else if (board[newRow][newCol] === 0 && count === 4) {
+                    leftOpen = true;
+                    break;
+                } else {
+                    break;
+                }
+                i++;
+            }
+            
+            return count === 4 && leftOpen && rightOpen;
+        }
+
+        function checkDoubleFour(row, col) {
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            let fourCount = 0;
+            
+            for (let [dx, dy] of directions) {
+                if (isFour(row, col, dx, dy)) {
+                    fourCount++;
+                }
+            }
+            
+            return fourCount >= 2;
+        }
+
+        function isFour(row, col, dx, dy) {
+            // 4: 한 수를 더 두면 5가 되는 상태 (열림/닫힘 무관)
+            let count = 1;
+            let positions = [{row, col}];
+            
+            // 정방향
+            for (let i = 1; i <= 4; i++) {
+                const newRow = row + i * dx;
+                const newCol = col + i * dy;
+                
+                if (newRow >= 0 && newRow < 15 && newCol >= 0 && newCol < 15) {
+                    if (board[newRow][newCol] === 1) {
+                        count++;
+                        positions.push({row: newRow, col: newCol});
+                    } else if (board[newRow][newCol] === 0 && positions.length < 4) {
+                        // 띄어진 4 체크
+                        const nextRow = newRow + dx;
+                        const nextCol = newCol + dy;
+                        if (nextRow >= 0 && nextRow < 15 && nextCol >= 0 && nextCol < 15 &&
+                            board[nextRow][nextCol] === 1) {
+                            // 한 칸 띄고 돌이 있는 경우
+                            let tempCount = count + 1;
+                            for (let j = i + 2; j <= 5; j++) {
+                                const farRow = row + j * dx;
+                                const farCol = col + j * dy;
+                                if (farRow >= 0 && farRow < 15 && farCol >= 0 && farCol < 15 &&
+                                    board[farRow][farCol] === 1) {
+                                    tempCount++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (tempCount === 4) return true;
+                        }
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            // 역방향
+            for (let i = 1; i <= 4; i++) {
+                const newRow = row - i * dx;
+                const newCol = col - i * dy;
+                
+                if (newRow >= 0 && newRow < 15 && newCol >= 0 && newCol < 15) {
+                    if (board[newRow][newCol] === 1) {
+                        count++;
+                        positions.push({row: newRow, col: newCol});
+                    } else if (board[newRow][newCol] === 0 && positions.length < 4) {
+                        // 띄어진 4 체크
+                        const nextRow = newRow - dx;
+                        const nextCol = newCol - dy;
+                        if (nextRow >= 0 && nextRow < 15 && nextCol >= 0 && nextCol < 15 &&
+                            board[nextRow][nextCol] === 1) {
+                            // 한 칸 띄고 돌이 있는 경우
+                            let tempCount = count + 1;
+                            for (let j = i + 2; j <= 5; j++) {
+                                const farRow = row - j * dx;
+                                const farCol = col - j * dy;
+                                if (farRow >= 0 && farRow < 15 && farCol >= 0 && farCol < 15 &&
+                                    board[farRow][farCol] === 1) {
+                                    tempCount++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (tempCount === 4) return true;
+                        }
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            return count === 4;
+        }
+
+        function checkOverline(row, col) {
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            
+            for (let [dx, dy] of directions) {
+                let count = 1;
+                count += countStones(row, col, dx, dy, 1);
+                count += countStones(row, col, -dx, -dy, 1);
+                
+                if (count >= 6) return true;
+            }
+            
+            return false;
+        }
+
+        function countStones(row, col, dx, dy, player) {
+            let count = 0;
+            let i = 1;
+            
+            while (true) {
+                const newRow = row + i * dx;
+                const newCol = col + i * dy;
+                
+                if (newRow < 0 || newRow >= 15 || newCol < 0 || newCol >= 15) break;
+                if (board[newRow][newCol] !== player) break;
+                
+                count++;
+                i++;
+            }
+            
+            return count;
+        }
+
+        function checkWin(row, col) {
+            const directions = [[0,1], [1,0], [1,1], [1,-1]];
+            const player = board[row][col];
+            
+            for (let [dx, dy] of directions) {
+                let count = 1;
+                count += countStones(row, col, dx, dy, player);
+                count += countStones(row, col, -dx, -dy, player);
+                
+                // 흑은 정확히 5개, 백은 5개 이상이면 승리
+                if (player === 1 && count === 5) return true;
+                if (player === 2 && count >= 5) return true;
+            }
+            
+            return false;
+        }
+
+        function updateCurrentPlayer() {
+            const playerElement = document.querySelector('.current-player');
+            if (currentPlayer === 1) {
+                playerElement.innerHTML = '현재 턴: <span class="stone-preview black-stone"></span> 흑돌 차례';
+            } else {
+                playerElement.innerHTML = '현재 턴: <span class="stone-preview white-stone"></span> 백돌 차례';
+            }
+        }
+
+        function showWinner(player) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            
+            const message = document.createElement('div');
+            message.className = 'winner-message';
+            
+            if (player === 1) {
+                message.innerHTML = '🎉 흑돌 승리! 🎉<br><span style="font-size:0.6em;">축하합니다!</span>';
+            } else {
+                message.innerHTML = '🎉 백돌 승리! 🎉<br><span style="font-size:0.6em;">축하합니다!</span>';
+            }
+            
+            document.body.appendChild(overlay);
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                overlay.onclick = () => {
+                    document.body.removeChild(overlay);
+                    document.body.removeChild(message);
+                };
+            }, 1000);
+        }
+
+        function resetGame() {
+            board = Array(15).fill().map(() => Array(15).fill(0));
+            currentPlayer = 1;
+            gameWon = false;
+            
+            // 기존 돌들 제거
+            const stones = document.querySelectorAll('.stone');
+            stones.forEach(stone => stone.remove());
+            
+            // 금수 표시 제거
+            const marks = document.querySelectorAll('.forbidden-mark');
+            marks.forEach(mark => mark.remove());
+            
+            // 승리 메시지 제거
+            const overlay = document.querySelector('.overlay');
+            const message = document.querySelector('.winner-message');
+            if (overlay) document.body.removeChild(overlay);
+            if (message) document.body.removeChild(message);
+            
+            updateCurrentPlayer();
+            updateForbiddenMoves();
+        }
+
+        // 게임 초기화
+        initBoard();
+    </script>
+</body>
+</html>

@@ -159,6 +159,14 @@
             background: linear-gradient(to top, #ff3e3e 95%, transparent);
             box-shadow: 0 0 4px rgba(255, 62, 62, 0.5);
         }
+        .tstat {
+            font-size: 24px;
+            font-weight: 200;
+            color: #fff;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            font-variant-numeric: tabular-nums;
+        }
 
         /* Clock markers */
         .marker {
@@ -446,6 +454,8 @@
             </div>
             <div class="date-display" id="date">
                 MONDAY, JANUARY 1
+            </div>
+            <div class="tstat" id="tstat">
             </div>
         </div>
     </div>
@@ -748,7 +758,18 @@
             const date = now.getDate();
             
             document.getElementById('date').textContent = `${monthName} ${date}일 ${dayName}`;
-            
+            tstat = document.getElementById('tstat');
+            if ((hours == 17 && minutes >= 10) || (hours == 18 && minutes < 35)) {
+                tstat.textContent = '방과후';
+            } else if ((hours == 18 && minutes >= 35) || (hours == 19 && minutes < 50)) {
+                tstat.textContent = '저녁 시간';
+            } else if ((hours == 19 && minutes >= 50) || hours == 20 || (hours == 21 && minutes < 10)) {
+                tstat.textContent = '야자 1타임';
+            } else if ((hours == 21 && minutes >= 10 && minutes < 30)) {
+                tstat.textContent = '쉬는 시간';
+            } else if ((hours == 21 && minutes >= 30) || hours == 22 || (hours == 23 && minutes < 50)) {
+                tstat.textContent = '야자 2타임';
+            }
             // Analog clock
             const hoursDeg = (now.getHours() % 12) * 30 + (now.getMinutes() * 0.5);
             const minutesDeg = now.getMinutes() * 6 + (now.getSeconds() * 0.1);

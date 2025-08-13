@@ -767,8 +767,10 @@
                 tstat.textContent = '야자 1타임';
             } else if ((hours == 21 && minutes >= 10 && minutes < 30)) {
                 tstat.textContent = '쉬는 시간';
-            } else if ((hours == 21 && minutes >= 30) || hours == 22 || (hours == 23 && minutes < 50)) {
+            } else if ((hours == 21 && minutes >= 30) || (hours == 22 && minutes < 50)) {
                 tstat.textContent = '야자 2타임';
+            } else if ((hours == 22 && minutes >= 50)) {
+                tstat.textContent = '끝.';
             }
             // Analog clock
             const hoursDeg = (now.getHours() % 12) * 30 + (now.getMinutes() * 0.5);

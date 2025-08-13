@@ -390,6 +390,43 @@
         .attendance-info .absent-count {
             color: #ff3e3e;
         }
+
+        /* Action Buttons */
+        .action-buttons {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+
+        #trash-btn.drag-over {
+            background: rgba(255, 68, 68, 0.8);
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -472,6 +509,12 @@
     
     <!-- Exit Fullscreen Button -->
     <button class="exit-fullscreen-btn" onclick="exitFullscreen()">✕</button>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="action-btn" id="trash-btn">🗑️</div>
+        <div class="action-btn" id="add-btn">+</div>
+    </div>
 
     <script>
         // Create magnets
@@ -607,17 +650,31 @@
 
             function dragEnd(e) {
                 if (!isDragging) return;
-                
-                initialX = currentX;
-                initialY = currentY;
+
                 isDragging = false;
                 element.classList.remove('dragging');
 
-                // Check if dropped on a board section
+                const trashBtn = document.getElementById('trash-btn');
+                const trashRect = trashBtn.getBoundingClientRect();
                 const elementRect = element.getBoundingClientRect();
                 const elementCenterX = elementRect.left + elementRect.width / 2;
                 const elementCenterY = elementRect.top + elementRect.height / 2;
+
+                if (elementCenterX >= trashRect.left &&
+                    elementCenterX <= trashRect.right &&
+                    elementCenterY >= trashRect.top &&
+                    elementCenterY <= trashRect.bottom) {
+                    element.remove();
+                    updateAttendance();
+                    rearrangeMagnets();
+                    trashBtn.classList.remove('drag-over');
+                    return; 
+                }
                 
+                initialX = currentX;
+                initialY = currentY;
+
+                // Check if dropped on a board section
                 const sections = document.querySelectorAll('.board-section');
                 let attached = false;
                 
@@ -652,6 +709,7 @@
                 document.querySelectorAll('.board-section').forEach(s => {
                     s.classList.remove('drag-over');
                 });
+                trashBtn.classList.remove('drag-over');
             }
 
             function drag(e) {
@@ -716,6 +774,18 @@
                             section.classList.remove('drag-over');
                         }
                     });
+
+                    // Highlight trash can
+                    const trashBtn = document.getElementById('trash-btn');
+                    const trashRect = trashBtn.getBoundingClientRect();
+                    if (elementCenterX >= trashRect.left &&
+                        elementCenterX <= trashRect.right &&
+                        elementCenterY >= trashRect.top &&
+                        elementCenterY <= trashRect.bottom) {
+                        trashBtn.classList.add('drag-over');
+                    } else {
+                        trashBtn.classList.remove('drag-over');
+                    }
                 }
             }
 
@@ -812,6 +882,42 @@
                 document.body.classList.remove('fullscreen');
             }
         });
+
+        // --- New Features: Trash Can and Add Button ---
+
+        const addBtn = document.getElementById('add-btn');
+
+        addBtn.addEventListener('click', () => {
+            const number = prompt('추가할 번호를 입력하세요 (1-99):');
+            if (number !== null && number.trim() !== '') {
+                const num = parseInt(number, 10);
+                if (!isNaN(num) && num > 0 && num < 100) {
+                    if (document.querySelector(`.magnet[data-number="${num}"]`)) {
+                        alert('이미 존재하는 번호입니다.');
+                        return;
+                    }
+                    createSingleMagnet(num);
+                } else {
+                    alert('1과 99 사이의 유효한 번호를 입력하세요.');
+                }
+            }
+        });
+
+        function createSingleMagnet(magnetNumber) {
+            const container = document.getElementById('magnetContainer');
+            const magnet = document.createElement('div');
+            magnet.className = 'magnet';
+            magnet.textContent = magnetNumber;
+            magnet.dataset.number = magnetNumber;
+
+            magnet.style.left = '0px';
+            magnet.style.top = '0px';
+
+            container.appendChild(magnet);
+            addDragFunctionality(magnet);
+            rearrangeMagnets();
+        }
+
 
         // Update immediately and then every second
         updateClock();

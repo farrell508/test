@@ -1,493 +1,803 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Full Clock</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Clock</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
-        :root {
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-hover: rgba(255, 255, 255, 0.08);
-            --tick-color: rgba(255, 255, 255, 0.3);
-            --tick-major: rgba(255, 255, 255, 0.6);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        [data-theme="light"] {
-            --bg-color: #ffffff;
-            --text-color: #000000;
-            --glass-bg: rgba(0, 0, 0, 0.05);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --glass-hover: rgba(0, 0, 0, 0.08);
-            --tick-color: rgba(0, 0, 0, 0.3);
-            --tick-major: rgba(0, 0, 0, 0.6);
-        }
-        
         body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Magnet Container */
+        .magnet-container {
+            position: absolute;
+            left: 40px;
+            top: 40px;
+            bottom: 40px;
+            width: calc(100% - 400px);
+            pointer-events: none;
+        }
+
+        .magnet {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: grab;
+            user-select: none;
+            box-shadow: 
+                0 4px 15px rgba(255, 68, 68, 0.3),
+                0 2px 5px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: transform 0.1s, box-shadow 0.2s;
+            pointer-events: auto;
+            touch-action: none;
+            z-index: 100;
+        }
+
+        .magnet:hover {
+            transform: scale(1.05);
+            box-shadow: 
+                0 6px 20px rgba(255, 68, 68, 0.4),
+                0 3px 8px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .magnet.dragging {
+            cursor: grabbing;
+            transform: scale(1.1);
+            z-index: 1000;
+            box-shadow: 
+                0 10px 30px rgba(255, 68, 68, 0.5),
+                0 5px 15px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .magnet.attached {
+            position: relative;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
+            margin: 4px;
+        }
+
+        .clock-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            background: var(--bg-color);
-            font-family: 'Inter', sans-serif;
-            overflow: auto;
-            transition: background 0.3s ease;
-            touch-action: none; /* 모바일에서 스크롤 등 기본 터치 동작 방지 */
+            gap: 40px;
+            animation: fadeIn 1s ease-out;
+            position: relative;
+            z-index: 100;
         }
 
-        #clockContainer {
-            position: absolute;
-            cursor: move;
-            user-select: none;
-            transition: all 0.2s ease;
-            touch-action: none; /* 터치 시 기본 동작 방지 */
-        }
-
-        #digitalClock {
-            font-size: 56px;
-            font-weight: 300;
-            background: var(--glass-bg);
-            color: var(--text-color);
-            padding: 20px 40px;
-            border-radius: 2px;
-            margin-bottom: 40px;
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            text-align: center;
-            letter-spacing: 4px;
-            font-variant-numeric: tabular-nums;
-            transition: all 0.3s ease;
-        }
-
-        /* 모바일 화면에서 디지털 시계 크기 조정 */
-        @media (max-width: 768px) {
-            #digitalClock {
-                font-size: 36px;
-                padding: 15px 30px;
-                letter-spacing: 2px;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
             }
-            
-            #analogClock {
-                width: 250px !important;
-                height: 250px !important;
-            }
-            
-            #hourHand {
-                height: 60px !important;
-            }
-            
-            #minuteHand {
-                height: 80px !important;
-            }
-            
-            #secondHand {
-                height: 95px !important;
+            to {
+                opacity: 1;
+                transform: translateX(0);
             }
         }
 
-        #analogClock {
-            width: 300px;
-            height: 300px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+        /* Analog Clock */
+        .analog-clock {
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             position: relative;
-            backdrop-filter: blur(20px);
-            margin: 0 auto;
-            transition: all 0.3s ease;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02), transparent);
+            box-shadow: 
+                0 0 40px rgba(255, 255, 255, 0.05),
+                inset 0 0 20px rgba(255, 255, 255, 0.02);
         }
 
-        .center-dot {
+        .clock-center {
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 8px;
-            height: 8px;
-            background: var(--text-color);
+            width: 10px;
+            height: 10px;
+            background: #fff;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            transition: background 0.3s ease;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
         .hand {
             position: absolute;
             bottom: 50%;
             left: 50%;
-            transform-origin: bottom;
+            transform-origin: 50% 100%;
             transform: translateX(-50%);
-            background: var(--text-color);
-            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            border-radius: 10px;
         }
 
-        #hourHand {
+        .hour-hand {
             width: 3px;
-            height: 70px;
-            border-radius: 2px;
+            height: 50px;
+            background: linear-gradient(to top, #fff 90%, transparent);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
         }
 
-        #minuteHand {
+        .minute-hand {
             width: 2px;
-            height: 95px;
-            border-radius: 1px;
+            height: 65px;
+            background: linear-gradient(to top, #fff 95%, transparent);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
         }
 
-        #secondHand {
+        .second-hand {
             width: 1px;
-            height: 110px;
-            background: var(--text-color);
-            opacity: 0.8;
-            transition: transform 0.05s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+            height: 70px;
+            background: linear-gradient(to top, #ff3e3e 95%, transparent);
+            box-shadow: 0 0 4px rgba(255, 62, 62, 0.5);
         }
 
-        .tick {
+        /* Clock markers */
+        .marker {
             position: absolute;
+            width: 1px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
             left: 50%;
-            top: 20px;
-            transform-origin: center 130px;
+            transform-origin: 50% 100px;
             transform: translateX(-50%);
         }
 
-        .tick::before {
-            content: '';
-            display: block;
-            width: 1px;
-            height: 15px;
-            background: var(--tick-color);
-            transition: background 0.3s ease;
-        }
-
-        .tick.major::before {
+        .marker.major {
+            height: 12px;
             width: 2px;
-            height: 25px;
-            background: var(--tick-major);
+            background: rgba(255, 255, 255, 0.5);
         }
 
-        #clockContainer:hover {
-            transform: scale(1.01);
+        /* Digital Clock */
+        .digital-clock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
 
-        #clockContainer:hover #digitalClock {
-            background: var(--glass-hover);
-            border-color: var(--glass-border);
+        .time-display {
+            font-size: 48px;
+            font-weight: 200;
+            color: #fff;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            font-variant-numeric: tabular-nums;
         }
 
-        #clockContainer:hover #analogClock {
-            background: var(--glass-hover);
-            border-color: var(--glass-border);
+        .date-display {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 300;
         }
 
-        #clockContainer:active {
-            transform: scale(0.99);
+        .seconds {
+            color: #ff3e3e;
+            font-size: 24px;
+            margin-left: 8px;
+            font-weight: 100;
         }
 
-        #fullscreenBtn {
+        /* Subtle animation for digital time */
+        .time-display {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.9;
+            }
+        }
+        /* Fullscreen Button */
+        .fullscreen-btn {
             position: fixed;
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 12px 24px;
-            background: var(--glass-bg);
-            color: var(--text-color);
-            border: 1px solid var(--glass-border);
-            border-radius: 6px;
-            font-family: 'Inter', sans-serif;
-            font-size: 14px;
-            font-weight: 400;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 300;
+            letter-spacing: 2px;
             cursor: pointer;
-            backdrop-filter: blur(20px);
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
             z-index: 1000;
-            display: block;
         }
 
-        #fullscreenBtn:hover {
-            background: var(--glass-hover);
-            border-color: var(--glass-border);
-            transform: translateX(-50%) translateY(-2px);
+        .fullscreen-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
         }
 
-        #fullscreenBtn:active {
-            transform: translateX(-50%) translateY(0px);
-        }
-
-        /* 테마 스위치 */
-        #themeSwitch {
+        /* Exit Fullscreen Button */
+        .exit-fullscreen-btn {
             position: fixed;
-            top: 30px;
-            right: 30px;
-            width: 56px;
-            height: 30px;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(20px);
-            z-index: 1000;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        #themeSwitch:hover {
-            background: var(--glass-hover);
-            transform: scale(1.05);
-        }
-
-        .theme-slider {
-            position: absolute;
-            top: 2px;
-            width: 26px;
-            height: 26px;
-            background: var(--text-color);
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
-            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            box-shadow: 
-                0 2px 8px rgba(0, 0, 0, 0.3),
-                inset 0 1px 2px rgba(255, 255, 255, 0.1);
-            display: flex;
+            color: #fff;
+            font-size: 20px;
+            display: none;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            color: var(--bg-color);
-            left: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 10000;
         }
 
-        [data-theme="light"] .theme-slider {
-            left: 28px;
+        .exit-fullscreen-btn:hover {
+            background: rgba(255, 68, 68, 0.8);
+            transform: scale(1.1);
         }
 
-        [data-theme="dark"] .theme-slider {
-            left: 2px;
+        body.fullscreen .exit-fullscreen-btn {
+            display: flex;
         }
 
-        /* 전체화면 시에만 스위치 숨기기 */
-        body:fullscreen #themeSwitch,
-        body:-webkit-full-screen #themeSwitch,
-        body:-moz-full-screen #themeSwitch,
-        body:-ms-fullscreen #themeSwitch {
+        body.fullscreen .fullscreen-btn {
             display: none;
         }
 
-        /* 애니메이션 효과 */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-2px); }
+        /* Board Container */
+        .board-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            z-index: 10;
         }
 
-        #themeSwitch:hover .theme-slider {
-            animation: float 2s ease-in-out infinite;
+        .board-title {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 3px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
         }
 
-        /* 드래그 중일 때 시각적 피드백 */
-        .dragging {
-            transform: scale(1.02) !important;
-            opacity: 0.9;
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .board-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 140px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .board-section:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .board-section.drag-over {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 68, 68, 0.5);
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.2);
+        }
+
+        .section-title {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-content {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            line-height: 1.5;
+            min-height: 70px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-content: flex-start;
+        }
+        /* Attendance Info */
+        .attendance-info {
+            position: fixed;
+            right: 40px;
+            bottom: 150px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 16px;
+            line-height: 1.8;
+            letter-spacing: 1px;
+            text-align: right;
+            z-index: 100;
+        }
+
+        .attendance-info .label {
+            color: rgba(255, 255, 255, 0.4);
+            margin-right: 8px;
+        }
+
+        .attendance-info .number {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        .attendance-info .absent-count {
+            color: #ff3e3e;
         }
     </style>
 </head>
-<body data-theme="dark">
-    <div id="themeSwitch">
-        <div class="theme-slider">🌙</div>
-    </div>
+<body>
+    <!-- Magnet Container -->
+    <div class="magnet-container" id="magnetContainer"></div>
 
-    <div id="clockContainer">
-        <div id="digitalClock"></div>
-        <div id="analogClock">
-            <div class="center-dot"></div>
-            <div id="hourHand" class="hand"></div>
-            <div id="minuteHand" class="hand"></div>
-            <div id="secondHand" class="hand"></div>
+    <!-- Board Container -->
+    <div class="board-container">
+        <div class="board-title">게시판</div>
+        <div class="board-grid">
+            <div class="board-section" data-category="toilet">
+                <div class="section-title">화장실(물)</div>
+                <div class="section-content" id="toilet-content"></div>
+            </div>
+            <div class="board-section" data-category="club">
+                <div class="section-title">동아리</div>
+                <div class="section-content" id="club-content"></div>
+            </div>
+            <div class="board-section" data-category="hallway">
+                <div class="section-title">복도</div>
+                <div class="section-content" id="hallway-content"></div>
+            </div>
+            <div class="board-section" data-category="afterschool">
+                <div class="section-title">방과후</div>
+                <div class="section-content" id="afterschool-content"></div>
+            </div>
+            <div class="board-section" data-category="etc">
+                <div class="section-title">기타</div>
+                <div class="section-content" id="etc-content"></div>
+            </div>
+            <div class="board-section" data-category="absence">
+                <div class="section-title">결석(조퇴)</div>
+                <div class="section-content" id="absence-content"></div>
+            </div>
         </div>
     </div>
 
-    <button id="fullscreenBtn">전체 화면으로 보기</button>
+    <div class="clock-container">
+        <div class="analog-clock">
+            <div class="clock-center"></div>
+            <div class="hand hour-hand" id="hourHand"></div>
+            <div class="hand minute-hand" id="minuteHand"></div>
+            <div class="hand second-hand" id="secondHand"></div>
+            <!-- Hour markers -->
+            <div class="marker major" style="transform: translateX(-50%) rotate(0deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(30deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(60deg);"></div>
+            <div class="marker major" style="transform: translateX(-50%) rotate(90deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(120deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(150deg);"></div>
+            <div class="marker major" style="transform: translateX(-50%) rotate(180deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(210deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(240deg);"></div>
+            <div class="marker major" style="transform: translateX(-50%) rotate(270deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(300deg);"></div>
+            <div class="marker" style="transform: translateX(-50%) rotate(330deg);"></div>
+        </div>
+
+        <div class="digital-clock">
+            <div class="time-display">
+                <span id="hours">00</span>:<span id="minutes">00</span><span class="seconds" id="seconds">00</span>
+            </div>
+            <div class="date-display" id="date">
+                MONDAY, JANUARY 1
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Info -->
+    <div class="attendance-info">
+        <div><span class="label">총원</span><span class="number">30명</span></div>
+        <div><span class="label">결원</span><span class="number absent-count" id="absent-count">0명</span></div>
+        <div><span class="label">현원</span><span class="number" id="present-count">30명</span></div>
+    </div>
+
+    <!-- Fullscreen Button -->
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">전체화면</button>
+    
+    <!-- Exit Fullscreen Button -->
+    <button class="exit-fullscreen-btn" onclick="exitFullscreen()">✕</button>
 
     <script>
-        // 테마 관리
-        const themeSwitch = document.getElementById('themeSwitch');
-        const body = document.body;
-        const slider = document.querySelector('.theme-slider');
-        
-        let currentTheme = 'dark';
-
-        themeSwitch.addEventListener('click', () => {
-            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            body.setAttribute('data-theme', currentTheme);
+        // Create magnets
+        function createMagnets() {
+            const container = document.getElementById('magnetContainer');
+            const rows = 6;
+            const cols = 5;
+            const magnetSize = 50;
+            const gap = 15;
+            let magnetNumber = 1;
             
-            if (currentTheme === 'dark') {
-                slider.textContent = '🌙';
-                slider.style.filter = 'grayscale(100%)';
-            } else {
-                slider.textContent = '☀️';
-                slider.style.filter = 'none';
-            }
-            
-            sessionStorage.setItem('theme', currentTheme);
-        });
-
-        // 페이지 로드 시 세션에서 테마 복원
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = sessionStorage.getItem('theme') || 'dark';
-            currentTheme = savedTheme;
-            body.setAttribute('data-theme', currentTheme);
-            
-            if (currentTheme === 'dark') {
-                slider.textContent = '🌙';
-                slider.style.filter = 'grayscale(100%)';
-            } else {
-                slider.textContent = '☀️';
-                slider.style.filter = 'none';
-            }
-        });
-
-        // 전체화면 관리
-        document.addEventListener('DOMContentLoaded', () => {
-            const fullscreenBtn = document.getElementById('fullscreenBtn');
-
-            fullscreenBtn.addEventListener('click', () => {
-                if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
-                    if (document.documentElement.requestFullscreen) {
-                        document.documentElement.requestFullscreen().catch(err => {
-                            console.log('전체화면 모드를 지원하지 않는 브라우저입니다.', err);
-                        });
-                    } else if (document.documentElement.webkitRequestFullscreen) {
-                        document.documentElement.webkitRequestFullscreen();
-                    } else if (document.documentElement.msRequestFullscreen) {
-                        document.documentElement.msRequestFullscreen();
-                    } else {
-                        console.log('이 브라우저는 전체화면을 지원하지 않습니다.');
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (magnetNumber > 31) break;
+                    if (magnetNumber === 12) {
+                        magnetNumber++;
+                        if (magnetNumber > 31) break;
                     }
+                    
+                    const magnet = document.createElement('div');
+                    magnet.className = 'magnet';
+                    magnet.textContent = magnetNumber;
+                    magnet.dataset.number = magnetNumber;
+                    magnet.dataset.row = row;
+                    magnet.dataset.col = col;
+                    
+                    // Arranged position in 5x6 grid
+                    const x = col * (magnetSize + gap) + 50;
+                    const y = row * (magnetSize + gap) + 50;
+                    magnet.style.left = x + 'px';
+                    magnet.style.top = y + 'px';
+                    
+                    container.appendChild(magnet);
+                    
+                    // Add drag functionality
+                    addDragFunctionality(magnet);
+                    
+                    magnetNumber++;
+                }
+            }
+        }
+
+        // Rearrange unattached magnets
+        function rearrangeMagnets() {
+            const container = document.getElementById('magnetContainer');
+            const magnets = container.querySelectorAll('.magnet:not(.attached)');
+            const magnetSize = 50;
+            const gap = 15;
+            
+            // Sort magnets by their number
+            const sortedMagnets = Array.from(magnets).sort((a, b) => {
+                return parseInt(a.dataset.number) - parseInt(b.dataset.number);
+            });
+            
+            // Rearrange in grid
+            let row = 0;
+            let col = 0;
+            sortedMagnets.forEach(magnet => {
+                const x = col * (magnetSize + gap) + 50;
+                const y = row * (magnetSize + gap) + 50;
+                
+                magnet.style.left = x + 'px';
+                magnet.style.top = y + 'px';
+                magnet.style.transform = 'translate(0px, 0px)';
+                
+                col++;
+                if (col >= 5) {
+                    col = 0;
+                    row++;
                 }
             });
+        }
 
-            function handleFullscreenChange() {
-                const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
-                fullscreenBtn.style.display = isFullscreen ? 'none' : 'block';
-                themeSwitch.style.display = isFullscreen ? 'none' : 'flex';
+        // Update attendance count
+        function updateAttendance() {
+            const absenceSection = document.querySelector('[data-category="absence"] .section-content');
+            const absentCount = absenceSection ? absenceSection.querySelectorAll('.magnet').length : 0;
+            const presentCount = 30 - absentCount;
+            
+            document.getElementById('absent-count').textContent = absentCount + '명';
+            document.getElementById('present-count').textContent = presentCount + '명';
+        }
+
+        function addDragFunctionality(element) {
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            function dragStart(e) {
+                if (element.classList.contains('attached')) {
+                    // Detach from board
+                    const rect = element.getBoundingClientRect();
+                    const container = document.getElementById('magnetContainer');
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    element.classList.remove('attached');
+                    container.appendChild(element);
+                    
+                    // Set position to where it was on screen
+                    const newLeft = rect.left - containerRect.left;
+                    const newTop = rect.top - containerRect.top;
+                    
+                    element.style.left = newLeft + 'px';
+                    element.style.top = newTop + 'px';
+                    element.style.transform = 'translate(0px, 0px)';
+                    
+                    // Update attendance immediately when detaching from absence section
+                    updateAttendance();
+                    
+                    xOffset = 0;
+                    yOffset = 0;
+                    initialX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+                    initialY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+                } else {
+                    if (e.type === "touchstart") {
+                        initialX = e.touches[0].clientX - xOffset;
+                        initialY = e.touches[0].clientY - yOffset;
+                    } else {
+                        initialX = e.clientX - xOffset;
+                        initialY = e.clientY - yOffset;
+                    }
+                }
+
+                if (e.target === element) {
+                    isDragging = true;
+                    element.classList.add('dragging');
+                }
             }
 
-            document.addEventListener('fullscreenchange', handleFullscreenChange);
-            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-            document.addEventListener('msfullscreenchange', handleFullscreenChange);
+            function dragEnd(e) {
+                if (!isDragging) return;
+                
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+                element.classList.remove('dragging');
 
-            handleFullscreenChange();
-        });
+                // Check if dropped on a board section
+                const elementRect = element.getBoundingClientRect();
+                const elementCenterX = elementRect.left + elementRect.width / 2;
+                const elementCenterY = elementRect.top + elementRect.height / 2;
+                
+                const sections = document.querySelectorAll('.board-section');
+                let attached = false;
+                
+                for (let section of sections) {
+                    const sectionRect = section.getBoundingClientRect();
+                    if (elementCenterX >= sectionRect.left && 
+                        elementCenterX <= sectionRect.right && 
+                        elementCenterY >= sectionRect.top && 
+                        elementCenterY <= sectionRect.bottom) {
+                        
+                        // Attach to this section
+                        const content = section.querySelector('.section-content');
+                        element.classList.add('attached');
+                        element.style.transform = '';
+                        element.style.left = '';
+                        element.style.top = '';
+                        content.appendChild(element);
+                        attached = true;
+                        break;
+                    }
+                }
 
-        function updateClocks() {
+                // If not attached to any section, rearrange all unattached magnets
+                if (!attached) {
+                    setTimeout(rearrangeMagnets, 10);
+                }
+
+                // Update attendance count
+                updateAttendance();
+
+                // Remove drag-over class from all sections
+                document.querySelectorAll('.board-section').forEach(s => {
+                    s.classList.remove('drag-over');
+                });
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    
+                    if (e.type === "touchmove") {
+                        currentX = e.touches[0].clientX - initialX;
+                        currentY = e.touches[0].clientY - initialY;
+                    } else {
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+                    }
+
+                    xOffset = currentX;
+                    yOffset = currentY;
+
+                    // If element has been detached from board, use absolute positioning
+                    if (!element.classList.contains('attached')) {
+                        const container = document.getElementById('magnetContainer');
+                        const containerRect = container.getBoundingClientRect();
+                        
+                        // Calculate new position
+                        const currentLeft = parseFloat(element.style.left) || 0;
+                        const currentTop = parseFloat(element.style.top) || 0;
+                        
+                        let newX = currentLeft + currentX;
+                        let newY = currentTop + currentY;
+                        
+                        // Boundary checking
+                        if (newX < 0) newX = 0;
+                        if (newY < 0) newY = 0;
+                        if (newX > containerRect.width - 50) newX = containerRect.width - 50;
+                        if (newY > containerRect.height - 50) newY = containerRect.height - 50;
+                        
+                        element.style.left = newX + 'px';
+                        element.style.top = newY + 'px';
+                        element.style.transform = 'translate(0px, 0px)';
+                        
+                        // Reset offset for next drag
+                        initialX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+                        initialY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+                        xOffset = 0;
+                        yOffset = 0;
+                    } else {
+                        element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                    }
+
+                    // Highlight drop zones
+                    const elementRect = element.getBoundingClientRect();
+                    const elementCenterX = elementRect.left + elementRect.width / 2;
+                    const elementCenterY = elementRect.top + elementRect.height / 2;
+                    
+                    document.querySelectorAll('.board-section').forEach(section => {
+                        const sectionRect = section.getBoundingClientRect();
+                        if (elementCenterX >= sectionRect.left && 
+                            elementCenterX <= sectionRect.right && 
+                            elementCenterY >= sectionRect.top && 
+                            elementCenterY <= sectionRect.bottom) {
+                            section.classList.add('drag-over');
+                        } else {
+                            section.classList.remove('drag-over');
+                        }
+                    });
+                }
+            }
+
+            // Mouse events
+            element.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', drag);
+            
+            // Touch events for mobile
+            element.addEventListener('touchstart', dragStart, { passive: false });
+            document.addEventListener('touchend', dragEnd);
+            document.addEventListener('touchmove', drag, { passive: false });
+        }
+
+        // Initialize magnets
+        createMagnets();
+        
+        // Initial attendance update
+        updateAttendance();
+
+        function updateClock() {
             const now = new Date();
             
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
-            document.getElementById('digitalClock').textContent = timeString;
+            // Digital clock
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
             
-            const hourDeg = (now.getHours() % 12 + now.getMinutes() / 60 + now.getSeconds() / 3600) * 30;
-            const minuteDeg = (now.getMinutes() + now.getSeconds() / 60 + now.getMilliseconds() / 60000) * 6;
-            const secondDeg = (now.getSeconds() + now.getMilliseconds() / 1000) * 6;
+            document.getElementById('hours').textContent = hours;
+            document.getElementById('minutes').textContent = minutes;
+            document.getElementById('seconds').textContent = seconds;
             
-            document.getElementById('hourHand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
-            document.getElementById('minuteHand').style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
-            document.getElementById('secondHand').style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+            // Date
+            const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+            const months = ['1월', '2월', '3월', '4월', '5월', '6월', 
+                          '7월', '8월', '9월', '10월', '11월', '12월'];
+            
+            const dayName = days[now.getDay()];
+            const monthName = months[now.getMonth()];
+            const date = now.getDate();
+            
+            document.getElementById('date').textContent = `${monthName} ${date}일 ${dayName}`;
+            
+            // Analog clock
+            const hoursDeg = (now.getHours() % 12) * 30 + (now.getMinutes() * 0.5);
+            const minutesDeg = now.getMinutes() * 6 + (now.getSeconds() * 0.1);
+            const secondsDeg = now.getSeconds() * 6;
+            
+            document.getElementById('hourHand').style.transform = 
+                `translateX(-50%) rotate(${hoursDeg}deg)`;
+            document.getElementById('minuteHand').style.transform = 
+                `translateX(-50%) rotate(${minutesDeg}deg)`;
+            document.getElementById('secondHand').style.transform = 
+                `translateX(-50%) rotate(${secondsDeg}deg)`;
         }
 
-        setInterval(updateClocks, 50);
-        updateClocks();
-
-        // 시계 눈금 생성
-        const analogClock = document.getElementById('analogClock');
-
-        for (let i = 1; i <= 12; i++) {
-            const tick = document.createElement('div');
-            tick.className = 'tick major';
-            tick.style.transform = `translateX(-50%) rotate(${i * 30}deg)`;
-            analogClock.appendChild(tick);
-        }
-
-        for (let i = 1; i <= 60; i++) {
-            if (i % 5 !== 0) {
-                const tick = document.createElement('div');
-                tick.className = 'tick';
-                tick.style.transform = `translateX(-50%) rotate(${i * 6}deg)`;
-                analogClock.appendChild(tick);
+        // Fullscreen functions
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    document.body.classList.add('fullscreen');
+                }).catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
             }
         }
 
-        // 드래그 기능 (마우스 + 터치 지원)
-        const clockContainer = document.getElementById('clockContainer');
-        let isDragging = false;
-        let startX, startY, startLeft, startTop;
-
-        // 초기 위치 설정
-        clockContainer.style.left = '50%';
-        clockContainer.style.top = '50%';
-        clockContainer.style.transform = 'translate(-50%, -50%)';
-
-        // 터치 이벤트 헬퍼 함수
-        function getEventCoords(e) {
-            if (e.touches && e.touches.length > 0) {
-                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-            return { x: e.clientX, y: e.clientY };
-        }
-
-        // 드래그 시작
-        function startDrag(e) {
-            isDragging = true;
-            const coords = getEventCoords(e);
-            startX = coords.x;
-            startY = coords.y;
-
-            const rect = clockContainer.getBoundingClientRect();
-            startLeft = rect.left;
-            startTop = rect.top;
-
-            clockContainer.classList.add('dragging');
-            clockContainer.style.transform = 'none';
-            clockContainer.style.left = `${startLeft}px`;
-            clockContainer.style.top = `${startTop}px`;
-
-            e.preventDefault();
-        }
-
-        // 드래그 중
-        function duringDrag(e) {
-            if (isDragging) {
-                e.preventDefault();
-                const coords = getEventCoords(e);
-                const deltaX = coords.x - startX;
-                const deltaY = coords.y - startY;
-
-                clockContainer.style.left = `${startLeft + deltaX}px`;
-                clockContainer.style.top = `${startTop + deltaY}px`;
+        function exitFullscreen() {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().then(() => {
+                    document.body.classList.remove('fullscreen');
+                }).catch(err => {
+                    console.log(`Error attempting to exit fullscreen: ${err.message}`);
+                });
             }
         }
 
-        // 드래그 종료
-        function endDrag() {
-            if (isDragging) {
-                isDragging = false;
-                clockContainer.classList.remove('dragging');
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                document.body.classList.remove('fullscreen');
             }
-        }
+        });
 
-        // 마우스 이벤트
-        clockContainer.addEventListener('mousedown', startDrag);
-        document.addEventListener('mousemove', duringDrag);
-        document.addEventListener('mouseup', endDrag);
-        document.addEventListener('mouseleave', endDrag);
+        // Update immediately and then every second
+        updateClock();
+        setInterval(updateClock, 1000);
 
-        // 터치 이벤트 (모바일)
-        clockContainer.addEventListener('touchstart', startDrag, { passive: false });
-        document.addEventListener('touchmove', duringDrag, { passive: false });
-        document.addEventListener('touchend', endDrag);
-        document.addEventListener('touchcancel', endDrag);
+        // Smooth transition for second hand
+        setTimeout(() => {
+            document.getElementById('secondHand').style.transition = 'transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1)';
+        }, 1000);
     </script>
 </body>
 </html>

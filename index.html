@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Modern Clock</title>
   <link rel="stylesheet" href="main.css">
+  <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
+  <script src="https://unpkg.com/fireworks-js@2.x/dist/index.umd.js"></script>
 </head>
 <body>
   <!-- Magnet Container -->
@@ -110,7 +112,7 @@
     /* ===================== 고정 격자 좌표/자리표 ===================== */
     const gridPos = {};                  // 번호 -> {left, top}
     const placeholders = new Map();      // 번호 -> 자리표 엘리먼트
-
+    var isfired = 0;
     function createPlaceholder(num) {
       if (placeholders.has(num)) return;
       const pos = gridPos[num];
@@ -597,6 +599,12 @@
           }
       } else if (h == 22 && m >= 50) {
           tstat.textContent = '끝.';
+          if (isfired == 0) {
+            isfired = 1;
+            const container = document.querySelector('.fireworks');
+            const fireworks = new Fireworks.default(container);
+            fireworks.start();
+          }
       } else {
           tstat.textContent = '';
       }

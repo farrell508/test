@@ -96,6 +96,7 @@ body {
 
 /* Analog Clock */
 .analog-clock {
+    cursor: pointer;
     width: 200px;
     height: 200px;
     border: 2px solid rgba(255, 255, 255, 0.1);
@@ -130,7 +131,7 @@ body {
 .marker.major { height: 12px; width: 2px; background: rgba(255, 255, 255, 0.5); }
 
 /* Digital Clock */
-.digital-clock { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.digital-clock { display: flex; flex-direction: column; align-items: center; gap: 15px; cursor:default}
 .time-display {
     font-size: 48px; font-weight: 200; color: #fff; letter-spacing: 6px;
     text-shadow: 0 0 20px rgba(255, 255, 255, 0.3); font-variant-numeric: tabular-nums;
@@ -304,12 +305,14 @@ body.fullscreen .fullscreen-btn { display: none; }
 .fireworks { position: fixed; inset: 0; pointer-events: none; z-index: 1500; }
 
 .ultraman {
-    width: 80px;
+    
+    width: 100px;
     height: auto;
     position: absolute;
     right: 190px;
-    top: 50px;
+    top: 370px;
 }
 #ultraman {
     width: 100%;
+    opacity: 0.8;
 }

@@ -108,7 +108,7 @@
   <div id="reasonOverlay" class="dialog-overlay" hidden>
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="reasonTitle">
       <div class="dialog-title" id="reasonTitle">어떤 이유인가요?</div>
-      <textarea id="reasonInput" placeholder="예: 병원 예약, 상담, 급한 용무 등" rows="4"></textarea>
+      <textarea id="reasonInput" placeholder="예: 병원 예약, 상담, 급한 용무 등" rows="4" ></textarea>
       <div class="actions">
         <button id="reasonCancel" type="button">취소</button>
         <button id="reasonSave" class="primary" type="button">저장</button>
@@ -345,6 +345,7 @@
     }
 
     // ✅ 같은 사유끼리 한 줄에: [사유] -> [번호들]로 그룹핑
+    // ✅ 기타 사유 패널 렌더링 (배지 색을 자석과 동일하게 동기화)
     function updateEtcReasonPanel() {
       const list = document.getElementById('reasonList');
       if (!list) return;
@@ -361,10 +362,10 @@
         groups.get(reason).push(num);
       });
 
-      // 정렬: 사유 알파(한글) + 번호 오름차순
+      // 정렬: 사유(한글 알파) -> 번호 오름차순
       const collator = new Intl.Collator('ko');
       const entries = Array.from(groups.entries()).sort((a, b) => collator.compare(a[0], b[0]));
-      entries.forEach(([reason, nums]) => nums.sort((a,b)=>a-b));
+      entries.forEach(([_, nums]) => nums.sort((a,b)=>a-b));
 
       // 렌더링
       list.innerHTML = '';
@@ -382,10 +383,37 @@
 
         const badges = document.createElement('div');
         badges.className = 'badges';
+
         nums.forEach(n => {
           const b = document.createElement('span');
           b.className = 'badge';
           b.textContent = n;
+
+          // 🔗 자석 DOM 찾아서 스타일/클래스 동기화
+          const mag = document.querySelector(`.magnet[data-number="${n}"]`);
+          if (mag) {
+            // 1) color-* 클래스 복사 (선택자 기반 오버라이드용)
+            mag.classList.forEach(cls => {
+              if (cls.startsWith('color-')) b.classList.add(cls);
+            });
+
+            // 2) 실제 렌더된 스타일 복사 (CSS 수정 없이 즉시 동일한 색감 보장)
+            const cs = getComputedStyle(mag);
+            const bgImg = cs.backgroundImage;    // linear-gradient(...) 등
+            const bgCol = cs.backgroundColor;    // fallback
+            const fgCol = cs.color;              // 글자색
+
+            if (bgImg && bgImg !== 'none') {
+              b.style.backgroundImage = bgImg;
+              // backgroundImage가 있으면 backgroundColor를 지워 대비되는 경우 방지
+              b.style.backgroundColor = 'transparent';
+            } else {
+              b.style.backgroundImage = 'none';
+              b.style.backgroundColor = bgCol;
+            }
+            b.style.color = fgCol;
+          }
+
           badges.appendChild(b);
         });
 

@@ -6,6 +6,7 @@
   <title>Modern Clock</title>
   <link rel="stylesheet" href="main.css">
   <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
+
 </head>
 <body>
   <!-- Magnet Container -->
@@ -116,7 +117,14 @@
     </div>
   </div>
 
+  <div class="ultraman">
+    <img src="ultraman.png" id = "ultraman">
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
   <script>
+    $(".ultraman").hide();
     /* ===================== 저장/복원 (localStorage) ===================== */
     const STORAGE_KEY = 'modernClock.magnets.v1';
 
@@ -804,6 +812,15 @@
         });
       }
     })();
+
+    $(".clock-container")
+    .on("mousedown touchstart", function () {
+      $(".ultraman").show();
+    })
+    .on("mouseup mouseleave touchend touchcancel", function () {
+      $(".ultraman").hide();
+    });
+
   </script>
 </body>
 </html>

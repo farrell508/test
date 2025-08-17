@@ -219,13 +219,14 @@ body.fullscreen .fullscreen-btn { display: none; }
 .dialog textarea {
     width: 100%; resize: vertical; min-height: 65%;
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: #fff; padding: 10px; outline: none;
+    font-size: 35px;
 }
 .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .dialog .actions button { font-size: 20px; padding: 12px 22px; min-height: 44px; min-width: 110px; border-radius: 10px; }
 .dialog .actions .primary { background: #ff3e3e; border-color: transparent; }
 
 /* 이유 툴팁 (옵션) */
-#reasonTooltip {
+#Tooltip {
     position: fixed; z-index: 10001; max-width: 260px; padding: 10px 12px; border-radius: 10px;
     background: rgba(20,20,20,0.95); color: #fff; font-size: 25px; line-height: 1.45;
     border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 8px 30px rgba(0,0,0,0.5);
@@ -270,6 +271,12 @@ body.fullscreen .fullscreen-btn { display: none; }
 .magnet.color-blue   { background: linear-gradient(135deg, #3aa1ff, #0066ff); }
 .magnet.color-purple { background: linear-gradient(135deg, #b36bff, #7a2cff); }
 
+.badge.color-red    { background: linear-gradient(135deg, #ff4444, #cc0000); }
+.badge.color-orange { background: linear-gradient(135deg, #ff8c1a, #ff5e00); }
+.badge.color-yellow { background: linear-gradient(135deg, #ffd84d, #ffb300); color:#333; }
+.badge.color-green  { background: linear-gradient(135deg, #0e8837, #0fb957); }
+.badge.color-blue   { background: linear-gradient(135deg, #3aa1ff, #0066ff); }
+.badge.color-purple { background: linear-gradient(135deg, #b36bff, #7a2cff); }
 /* FAB (게임) */
 .fab-container { position: fixed; right: 24px; bottom: 24px; z-index: 2000; }
 .fab {

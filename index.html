@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Modern Clock</title>
+  <title>Modern Clock + Board + Noise Alert</title>
   <link rel="stylesheet" href="main.css">
   <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
+
+  <!-- 노이즈 미터와 버튼을 묶어서 오른쪽 위에 세로로 배치 -->
 
 </head>
 <body>
@@ -118,7 +120,16 @@
   </div>
 
   <div class="ultraman">
-    <img src="Ultra_Jiwon.png" id = "ultraman">
+    <img src="Ultra_Jiwon.png" id="ultraman">
+  </div>
+
+  <!-- ===== Noise Meter + Toggle (묶음) ===== -->
+  <div class="noise-wrap" id="noiseWrap">
+    <div id="noiseMeter" class="noise-meter" aria-live="polite">
+      dB: <span class="value" id="noiseValue">-∞</span>
+      <span class="hint"> (임계 <span class="th" id="thVal">-10</span> dB)</span>
+    </div>
+    <button id="toggleNoiseBtn" class="toggle-noise-btn" type="button">측정 시작</button>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -400,20 +411,19 @@
           // 🔗 자석 DOM 찾아서 스타일/클래스 동기화
           const mag = document.querySelector(`.magnet[data-number="${n}"]`);
           if (mag) {
-            // 1) color-* 클래스 복사 (선택자 기반 오버라이드용)
+            // 1) color-* 클래스 복사
             mag.classList.forEach(cls => {
               if (cls.startsWith('color-')) b.classList.add(cls);
             });
 
-            // 2) 실제 렌더된 스타일 복사 (CSS 수정 없이 즉시 동일한 색감 보장)
+            // 2) 실제 렌더된 스타일 복사
             const cs = getComputedStyle(mag);
-            const bgImg = cs.backgroundImage;    // linear-gradient(...) 등
-            const bgCol = cs.backgroundColor;    // fallback
-            const fgCol = cs.color;              // 글자색
+            const bgImg = cs.backgroundImage;
+            const bgCol = cs.backgroundColor;
+            const fgCol = cs.color;
 
             if (bgImg && bgImg !== 'none') {
               b.style.backgroundImage = bgImg;
-              // backgroundImage가 있으면 backgroundColor를 지워 대비되는 경우 방지
               b.style.backgroundColor = 'transparent';
             } else {
               b.style.backgroundImage = 'none';
@@ -821,6 +831,125 @@
       $(".ultraman").hide();
     });
 
+  </script>
+
+  <!-- ===== 소음 측정 + 임계치 경고음 (버튼으로 On/Off) ===== -->
+  <script>
+    // 임계치(dB). 환경/마이크에 따라 보정 권장
+    let THRESHOLD_DB = -10;
+    const BEEP_COOLDOWN = 1500;
+
+    const noiseEl = document.getElementById('noiseMeter');
+    const noiseValEl = document.getElementById('noiseValue');
+    const thValEl = document.getElementById('thVal');
+    const toggleBtn = document.getElementById('toggleNoiseBtn');
+
+    thValEl.textContent = THRESHOLD_DB;
+
+    let audioCtx = null;
+    let analyser = null;
+    let dataArray = null;
+    let micSource = null;
+    let micStream = null;
+    let rafId = null;
+    let lastBeepAt = 0;
+    let measuring = false;
+
+    function playBeep() {
+      const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioCtx) audioCtx = ctx;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 1000;
+      gain.gain.value = 0.15;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    }
+
+    function dbFromRMS(rms) {
+      if (rms <= 0) return -Infinity;
+      return 20 * Math.log10(rms);
+    }
+
+    function loop() {
+      if (!analyser || !dataArray || !measuring) return;
+      analyser.getByteTimeDomainData(dataArray);
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        const v = (dataArray[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / dataArray.length);
+      const db  = dbFromRMS(rms);
+
+      noiseValEl.textContent = isFinite(db) ? db.toFixed(1) : '-∞';
+
+      const nowMs = performance.now();
+      if (db > THRESHOLD_DB) {
+        noiseEl.classList.add('alert');
+        if (nowMs - lastBeepAt > BEEP_COOLDOWN) {
+          lastBeepAt = nowMs;
+          playBeep();
+        }
+      } else {
+        noiseEl.classList.remove('alert');
+      }
+
+      rafId = requestAnimationFrame(loop);
+    }
+
+    async function startNoiseMeter() {
+      if (measuring) return;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        micSource = audioCtx.createMediaStreamSource(micStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        dataArray = new Uint8Array(analyser.fftSize);
+        micSource.connect(analyser);
+        measuring = true;
+        toggleBtn.textContent = '측정 중지';
+        loop();
+      } catch (e) {
+        console.error(e);
+        alert('마이크 권한이 필요합니다.');
+      }
+    }
+
+    function stopNoiseMeter() {
+      measuring = false;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      if (micStream) {
+        try { micStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+        micStream = null;
+      }
+      if (audioCtx) {
+        try { audioCtx.close(); } catch (_) {}
+        audioCtx = null;
+      }
+      analyser = null;
+      dataArray = null;
+      micSource = null;
+      noiseValEl.textContent = '-∞';
+      noiseEl.classList.remove('alert');
+      toggleBtn.textContent = '측정 시작';
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      if (!measuring) startNoiseMeter();
+      else stopNoiseMeter();
+    });
+
+    // 노이즈 패널 클릭시 임계치 토글(예시)
+    noiseEl.addEventListener('click', () => {
+      THRESHOLD_DB = (THRESHOLD_DB === -10) ? -15 : -10;
+      thValEl.textContent = THRESHOLD_DB;
+    });
   </script>
 </body>
 </html>

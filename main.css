@@ -96,6 +96,10 @@ body {
 
 /* Analog Clock */
 .analog-clock {
+    -webkit-tap-highlight-color: transparent; /* 모바일 사파리/크롬 터치 하이라이트 제거 */
+    -webkit-touch-callout: none;             /* 길게 눌렀을 때 메뉴 제거 */
+    user-select: none;                       /* 드래그 선택 방지 */
+    outline: none;     
     cursor: pointer;
     width: 200px;
     height: 200px;

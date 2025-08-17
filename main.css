@@ -282,6 +282,7 @@ body.fullscreen .fullscreen-btn { display: none; }
 .badge.color-green  { background: linear-gradient(135deg, #0e8837, #0fb957); }
 .badge.color-blue   { background: linear-gradient(135deg, #3aa1ff, #0066ff); }
 .badge.color-purple { background: linear-gradient(135deg, #b36bff, #7a2cff); }
+
 /* FAB (게임) */
 .fab-container { position: fixed; right: 24px; bottom: 24px; z-index: 2000; }
 .fab {
@@ -308,8 +309,7 @@ body.fullscreen .fullscreen-btn { display: none; }
 /* 폭죽 오버레이 */
 .fireworks { position: fixed; inset: 0; pointer-events: none; z-index: 1500; }
 
-.ultraman {
-    
+.ultraman {    
     width: 100px;
     height: auto;
     position: absolute;
@@ -319,4 +319,48 @@ body.fullscreen .fullscreen-btn { display: none; }
 #ultraman {
     width: 100%;
     opacity: 0.8;
+}
+
+/* ===== Noise Meter (추가) ===== */
+.noise-meter {
+  position: fixed;
+  top: 30px; right: 30px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+}
+.noise-meter .value { font-variant-numeric: tabular-nums; margin-left: 6px; }
+.noise-meter.alert { background: rgba(255, 62, 62, 0.7); border-color: rgba(255, 62, 62, 0.9); }
+.noise-meter .hint { opacity: .8; font-size: 12px; display:block; margin-top:4px; }
+.noise-meter .th { opacity:.9; font-weight:700; }
+
+
+.noise-wrap {
+  position: fixed;
+  top: 100px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2100;
+}
+.toggle-noise-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  letter-spacing: .5px;
+  backdrop-filter: blur(6px);
+}
+.toggle-noise-btn:hover {
+  background: rgba(255,255,255,0.16);
 }

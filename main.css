@@ -303,3 +303,13 @@ body.fullscreen .fullscreen-btn { display: none; }
 /* 폭죽 오버레이 */
 .fireworks { position: fixed; inset: 0; pointer-events: none; z-index: 1500; }
 
+.ultraman {
+    width: 80px;
+    height: auto;
+    position: absolute;
+    right: 190px;
+    top: 50px;
+}
+#ultraman {
+    width: 100%;
+}

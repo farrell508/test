@@ -6,48 +6,15 @@
   <title>Modern Clock</title>
   <link rel="stylesheet" href="main.css">
   <script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.js"></script>
-  <script src="https://unpkg.com/fireworks-js@2.x/dist/index.umd.js"></script>
-  <style>
-    /* Floating Action Button (게임) */
-    .fab-container { position: fixed; right: 24px; bottom: 24px; z-index: 2000; }
-    .fab {
-      width: 64px; height: 64px; border-radius: 50%;
-      background: #2a2a2a; border: 1px solid rgba(255,255,255,0.15);
-      display: grid; place-items: center; cursor: pointer;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-    }
-    .fab:hover { transform: translateY(-1px); background: #333; }
-    .fab:active { transform: translateY(0); }
-    .fab img { width: 32px; height: 32px; display: block; }
-
-    .fab-menu { position: absolute; right: 0; bottom: 72px; display: none; gap: 8px; flex-direction: column; }
-    .fab-menu.open { display: flex; }
-    .fab-item {
-      min-width: 140px; padding: 10px 14px; font-size: 14px; text-align: left;
-      color: #fff; background: rgba(20,20,20,0.95);
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-    }
-    .fab-item:hover { background: rgba(40,40,40,0.95); }
-
-    /* Fireworks overlay container */
-    .fireworks { position: fixed; inset: 0; pointer-events: none; z-index: 1500; }
-  </style>
 </head>
 <body>
   <!-- Magnet Container -->
   <div class="magnet-container" id="magnetContainer"></div>
 
   <!-- 왼쪽 위: 기타 사유 패널 -->
-  <div id="reasonPanel"
-       style="position:fixed; left:40px; top:40px; width:320px; max-height:320px; overflow:auto;
-              background: rgba(20,20,20,0.9); border:1px solid rgba(255,255,255,0.15);
-              border-radius:12px; padding:14px; color:#fff; z-index:1000;">
-    <div style="font-size:16px; font-weight:700; margin-bottom:8px;">기타 사유</div>
-    <div id="reasonList" style="display:flex; flex-direction:column; gap:8px; font-size:14px; line-height:1.5;">
-      <!-- 여기 자동으로 채워짐 -->
-    </div>
+  <div id="reasonPanel">
+    <div class="panel-title">기타 사유</div>
+    <div id="reasonList"></div>
   </div>
 
   <!-- Board Container -->
@@ -108,7 +75,7 @@
         <span id="hours">00</span>:<span id="minutes">00</span><span class="seconds" id="seconds">00</span>
       </div>
       <div class="date-display" id="date">MONDAY, JANUARY 1</div>
-      <div class="tstat" id="tstat">
+      <div class="tstat" id="tstat"></div>
     </div>
   </div>
 
@@ -136,12 +103,12 @@
 
   <!-- Fireworks canvas container -->
   <div class="fireworks" aria-hidden="true"></div>
-   
+
   <!-- 이유 입력 다이얼로그 -->
   <div id="reasonOverlay" class="dialog-overlay" hidden>
     <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="reasonTitle">
       <div class="dialog-title" id="reasonTitle">어떤 이유인가요?</div>
-      <textarea id="reasonInput" placeholder="예: 병원 예약, 상담, 급한 용무 등" rows="4" style="font-size: 24px;"></textarea>
+      <textarea id="reasonInput" placeholder="예: 병원 예약, 상담, 급한 용무 등" rows="4"></textarea>
       <div class="actions">
         <button id="reasonCancel" type="button">취소</button>
         <button id="reasonSave" class="primary" type="button">저장</button>
@@ -150,10 +117,91 @@
   </div>
 
   <script>
+    /* ===================== 저장/복원 (localStorage) ===================== */
+    const STORAGE_KEY = 'modernClock.magnets.v1';
+
+    function saveState() {
+      const magnets = {};
+      document.querySelectorAll('.magnet:not(.placeholder)').forEach(m => {
+        const num = m.dataset.number;
+        const data = {};
+        if (m.dataset.reason) data.reason = m.dataset.reason;
+        if (m.classList.contains('attached')) {
+          const section = m.closest('.board-section');
+          data.attachedTo = section ? section.dataset.category : null;
+        } else {
+          data.attachedTo = null;
+          data.left = parseFloat(m.style.left) || 0;
+          data.top  = parseFloat(m.style.top)  || 0;
+        }
+        magnets[num] = data;
+      });
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ v:1, magnets })); }
+      catch (e) { console.warn('saveState failed:', e); }
+    }
+
+    function loadState() {
+      let parsed;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        console.warn('loadState failed:', e);
+        return;
+      }
+      if (!parsed || !parsed.magnets) return;
+
+      Object.entries(parsed.magnets).forEach(([num, data]) => {
+        const m = document.querySelector(`.magnet[data-number="${num}"]`);
+        if (!m) return;
+
+        // 이유 복원
+        if (data.reason) {
+          m.dataset.reason = data.reason;
+          m.classList.add('has-reason');
+        } else {
+          delete m.dataset.reason;
+          m.classList.remove('has-reason');
+        }
+
+        // 위치/소속 복원
+        if (data.attachedTo) {
+          const content = document.querySelector(`.board-section[data-category="${data.attachedTo}"] .section-content`);
+          if (content) {
+            m.classList.add('attached');
+            m.style.left = '';
+            m.style.top  = '';
+            m.style.transform = '';
+            content.appendChild(m);
+          }
+        } else {
+          m.classList.remove('attached');
+          const home = gridPos[+num] || { left: 0, top: 0 };
+          m.style.left = ((data.left ?? home.left) + 0) + 'px';
+          m.style.top  = ((data.top  ?? home.top)  + 0) + 'px';
+          m.style.transform = 'translate(0,0)';
+        }
+      });
+
+      sortAllSections();
+      updateAttendance();
+      updateMagnetOutline();
+      updateEtcReasonPanel();
+    }
+
+    function resetSavedState() {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  </script>
+
+  <script>
     /* ===================== 고정 격자 좌표/자리표 ===================== */
     const gridPos = {};                  // 번호 -> {left, top}
     const placeholders = new Map();      // 번호 -> 자리표 엘리먼트
     var isfired = 0;
+
     function createPlaceholder(num) {
       if (placeholders.has(num)) return;
       const pos = gridPos[num];
@@ -171,65 +219,59 @@
       document.getElementById('magnetContainer').appendChild(p);
       placeholders.set(num, p);
     }
-    function removePlaceholder(num) {
-      const p = placeholders.get(num);
-      if (p) { p.remove(); placeholders.delete(num); }
-    }
 
     /* ===================== 자석 생성 ===================== */
     function createMagnets() {
       const container = document.getElementById('magnetContainer');
       const rows = 6, cols = 5, size = 50, gap = 15;
       let n = 1;
-    
-      // 번호대별 색상 클래스 선택 (사용자 코드 그대로)
+
       function getColorClass(num) {
         if (num >= 1 && num <= 5)   return 'color-red';
         if (num >= 6 && num <= 10)  return 'color-orange';
         if (num >= 11 && num <= 16) return 'color-yellow';
         if (num >= 17 && num <= 21) return 'color-green';
-        if (num >= 21 && num <= 26) return 'color-blue';
+        if (num >= 22 && num <= 26) return 'color-blue';
         if (num >= 27 && num <= 31) return 'color-purple';
         return '';
       }
-    
+
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (n > 31) break;
           if (n === 12) { n++; if (n > 31) break; } // 12번 건너뛰기
-    
+
           const x = c * (size + gap) + 50;
           const y = r * (size + gap) + 500;
           gridPos[n] = { left: x, top: y };
 
-          // ★ 항상 회색 자리표 생성 (배경)
+          // 항상 회색 자리표 생성 (배경)
           createPlaceholder(n);
-    
+
           const m = document.createElement('div');
           m.className = 'magnet';
           const colorClass = getColorClass(n);
           if (colorClass) m.classList.add(colorClass);
-    
+
           m.textContent = n;
           m.dataset.number = n;
           m.style.left = x + 'px';
           m.style.top  = y + 'px';
-    
+
           container.appendChild(m);
           addDragFunctionality(m);
           n++;
         }
       }
-    
-      // 자리표 제외한 실제 총원 표기
+
       const total = container.querySelectorAll('.magnet:not(.placeholder)').length;
       const tc = document.getElementById('total-count');
       if (tc) tc.textContent = `${total}명`;
-    
+
       updateMagnetOutline();
     }
 
-    /* ===================== 외곽선(자리표 제외) ===================== */
+    /* ===================== 외곽선 ===================== */
     function ensureMagnetOutline() {
       const container = document.getElementById('magnetContainer');
       let outline = document.getElementById('magnetOutline');
@@ -245,7 +287,6 @@
     function updateMagnetOutline() {
       const container = document.getElementById('magnetContainer');
       const outline = ensureMagnetOutline();
-      // ✅ 자리표도 포함해서 테두리 계산
       const nodes = container.querySelectorAll('.magnet:not(.attached)');
 
       if (!nodes.length) {
@@ -275,30 +316,25 @@
 
     /* ===================== 출결 계산 ===================== */
     function updateAttendance() {
-      // 자리표(.placeholder) 제외한 실제 학생만 집계
       const total = document.querySelectorAll('.magnet:not(.placeholder)').length;
-    
-      // 화장실/복도를 결원에서 제외하려면 그대로 두고,
-      // 결원에 포함시키려면 [] 로 바꾸세요.
       const excluded = new Set(['toilet', 'hallway']);
-    
+
       let absentCount = 0;
       document.querySelectorAll('.board-section').forEach(section => {
         const cat = section.dataset.category;
         const content = section.querySelector('.section-content');
         if (!content) return;
-    
+
         const n = content.querySelectorAll('.magnet:not(.placeholder)').length;
         if (!excluded.has(cat)) absentCount += n;
       });
-    
-      // 표기값도 항상 동기화
+
       document.getElementById('total-count').textContent   = `${total}명`;
       document.getElementById('absent-count').textContent  = `${absentCount}명`;
       document.getElementById('present-count').textContent = `${total - absentCount}명`;
     }
 
-    /* ===================== 섹션 정렬(번호순) & 기타 사유 패널 ===================== */
+    /* ===================== 섹션 정렬 & 기타 사유 패널 ===================== */
     function sortSection(contentEl) {
       const mags = Array.from(contentEl.querySelectorAll('.magnet'))
         .sort((a, b) => (+a.dataset.number) - (+b.dataset.number));
@@ -308,17 +344,31 @@
       document.querySelectorAll('.section-content').forEach(sortSection);
     }
 
+    // ✅ 같은 사유끼리 한 줄에: [사유] -> [번호들]로 그룹핑
     function updateEtcReasonPanel() {
       const list = document.getElementById('reasonList');
       if (!list) return;
 
       const etcContent = document.querySelector('[data-category="etc"] .section-content');
-      const items = etcContent ? Array.from(etcContent.querySelectorAll('.magnet'))
-                                .sort((a,b)=> (+a.dataset.number) - (+b.dataset.number))
-                               : [];
+      const items = etcContent ? Array.from(etcContent.querySelectorAll('.magnet')) : [];
 
+      // 그룹핑: reason -> [numbers]
+      const groups = new Map();
+      items.forEach(m => {
+        const num = Number(m.dataset.number);
+        const reason = (m.dataset.reason || '(이유 미입력)').trim();
+        if (!groups.has(reason)) groups.set(reason, []);
+        groups.get(reason).push(num);
+      });
+
+      // 정렬: 사유 알파(한글) + 번호 오름차순
+      const collator = new Intl.Collator('ko');
+      const entries = Array.from(groups.entries()).sort((a, b) => collator.compare(a[0], b[0]));
+      entries.forEach(([reason, nums]) => nums.sort((a,b)=>a-b));
+
+      // 렌더링
       list.innerHTML = '';
-      if (!items.length) {
+      if (!entries.length) {
         const empty = document.createElement('div');
         empty.textContent = '현재 등록된 기타 사유가 없습니다.';
         empty.style.opacity = '0.7';
@@ -326,30 +376,24 @@
         return;
       }
 
-      items.forEach(m => {
-        const num = m.dataset.number;
-        const reason = m.dataset.reason || '(이유 미입력)';
+      entries.forEach(([reason, nums]) => {
         const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.gap = '8px';
-        row.style.alignItems = 'flex-start';
+        row.className = 'reason-item';
 
-        const badge = document.createElement('span');
-        badge.textContent = num;
-        badge.style.minWidth = '28px';
-        badge.style.height = '28px';
-        badge.style.borderRadius = '50%';
-        badge.style.display = 'grid';
-        badge.style.placeItems = 'center';
-        badge.style.background = '#ff3e3e';
-        badge.style.color = '#fff';
-        badge.style.fontWeight = '700';
+        const badges = document.createElement('div');
+        badges.className = 'badges';
+        nums.forEach(n => {
+          const b = document.createElement('span');
+          b.className = 'badge';
+          b.textContent = n;
+          badges.appendChild(b);
+        });
 
         const text = document.createElement('div');
+        text.className = 'reason-text';
         text.textContent = reason;
-        text.style.flex = '1';
 
-        row.appendChild(badge);
+        row.appendChild(badges);
         row.appendChild(text);
         list.appendChild(row);
       });
@@ -370,7 +414,6 @@
       let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
 
       function dragStart(e) {
-        // 섹션에 붙어 있으면 컨테이너에 떼어내되, 화면상 같은 좌표로 절대배치(스냅하지 않음)
         if (el.classList.contains('attached')) {
           const rect = el.getBoundingClientRect();
           const container = document.getElementById('magnetContainer');
@@ -386,6 +429,7 @@
           updateAttendance();
           updateMagnetOutline();
           updateEtcReasonPanel();
+          saveState();
         }
 
         if (e.type === "touchstart") {
@@ -436,8 +480,13 @@
           el.style.top  = newY + 'px';
           el.style.transform = 'translate(0,0)';
 
-          initialX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
-          initialY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+          if (e.type === "touchmove") {
+            initialX = e.touches[0].clientX;
+            initialY = e.touches[0].clientY;
+          } else {
+            initialX = e.clientX;
+            initialY = e.clientY;
+          }
           xOffset = 0; yOffset = 0;
 
           updateMagnetOutline();
@@ -496,9 +545,6 @@
               el.classList.remove('has-reason');
             }
           }
-
-          // ★ 자리표는 상시 존재 → 추가 생성 없음
-          // createPlaceholder(+el.dataset.number);
         } else {
           // 섹션이 아니면 항상 원래 자리로 복귀 + 이유 제거
           snapToHome(el);
@@ -506,13 +552,12 @@
             delete el.dataset.reason;
             el.classList.remove('has-reason');
           }
-          // ★ 자리표 상시 존재 → 제거 없음
-          // removePlaceholder(+el.dataset.number);
         }
 
         updateAttendance();
         updateMagnetOutline();
         updateEtcReasonPanel();
+        saveState();
 
         document.querySelectorAll('.board-section').forEach(sec => sec.classList.remove('drag-over'));
       }
@@ -558,6 +603,7 @@
       closeReasonDialog();
       sortAllSections();
       updateEtcReasonPanel();
+      saveState();
     });
 
     document.getElementById('reasonCancel').addEventListener('click', () => {
@@ -611,54 +657,59 @@
       const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
       document.getElementById('date').textContent =
         `${months[now.getMonth()]} ${now.getDate()}일 ${days[now.getDay()]}`;
-      tstat = document.getElementById('tstat');
-      if (h < 8 || (h == 8 && m < 10)) {
-          tstat.textContent = '아침 시간';
-      } else if (h == 8 && m >= 10 && m < 50) {
-          tstat.textContent = '아침 자습';
-      } else if (h == 8 && m >= 50) {
-          tstat.textContent = '아침 조회';
-      }else if (h == 17 && (m >= 10 && m < 50)) {
-          tstat.textContent = '방과후 1타임';
-      } else if (h == 17 && (m >= 50 && m < 55)) {
-        tstat.textContent = '쉬는 시간';
-      } else if ((h == 17 && m >= 55) || (h == 18 && m < 35)) {
-          tstat.textContent = '방과후 2타임';
-      } else if ((h == 18 && m >= 35) || (h == 19 && m < 50)) {
-          tstat.textContent = '저녁 시간';
-      } else if ((h == 19 && m >= 50) || h == 20 || (h == 21 && m < 10)) {
-          tstat.textContent = '야자 1타임';
-      } else if ((h == 21 && m >= 10 && m < 30)) {
-          tstat.textContent = '쉬는 시간';
-      } else if ((h == 21 && m >= 30) || (h == 22 && m < 50)) {
-          tstat.textContent = '야자 2타임';
-      } else if (h == 22 && m == 49) {
-          if (s >= 50) {
-              tstat.textContent = 60 - s;
-          } else {
-            tstat.textContent = '야자 2타임';
-          }
-      } else if (h == 22 && m >= 50) {
-          tstat.textContent = '끝.';
-          if (isfired == 0) {
-            isfired = 1;
-            const container = document.querySelector('.fireworks');
-            const fireworks = new Fireworks.default(container);
-            fireworks.start();
-          }
+
+      const tstatEl = document.getElementById('tstat');
+      const hh = Number(h), mm = Number(m), ss = Number(s);
+      if (hh < 8 || (hh === 8 && mm < 10)) {
+        tstatEl.textContent = '아침 시간';
+      } else if (hh === 8 && mm >= 10 && mm < 50) {
+        tstatEl.textContent = '아침 자습';
+      } else if (hh === 8 && mm >= 50) {
+        tstatEl.textContent = '아침 조회';
+      } else if (hh === 17 && (mm >= 10 && mm < 50)) {
+        tstatEl.textContent = '방과후 1타임';
+      } else if (hh === 17 && (mm >= 50 && mm < 55)) {
+        tstatEl.textContent = '쉬는 시간';
+      } else if ((hh === 17 && mm >= 55) || (hh === 18 && mm < 35)) {
+        tstatEl.textContent = '방과후 2타임';
+      } else if ((hh === 18 && mm >= 35) || (hh === 19 && mm < 50)) {
+        tstatEl.textContent = '저녁 시간';
+      } else if ((hh === 19 && mm >= 50) || hh === 20 || (hh === 21 && mm < 10)) {
+        tstatEl.textContent = '야자 1타임';
+      } else if ((hh === 21 && mm >= 10 && mm < 30)) {
+        tstatEl.textContent = '쉬는 시간';
+      } else if ((hh === 21 && mm >= 30) || (hh === 22 && mm < 50)) {
+        tstatEl.textContent = '야자 2타임';
+      } else if (hh === 22 && mm === 49) {
+        if (ss >= 50) {
+          tstatEl.textContent = String(60 - ss);
+        } else {
+          tstatEl.textContent = '야자 2타임';
+        }
+      } else if (hh === 22 && mm >= 50) {
+        tstatEl.textContent = '끝.';
+        if (isfired == 0) {
+          isfired = 1;
+          const container = document.querySelector('.fireworks');
+          const fireworks = new Fireworks.default(container);
+          fireworks.start();
+        }
       } else {
-          tstat.textContent = '';
+        tstatEl.textContent = '';
       }
+
       const hoursDeg = (now.getHours() % 12) * 30 + (now.getMinutes() * 0.5);
       const minutesDeg = now.getMinutes() * 6 + (now.getSeconds() * 0.1);
       const secondsDeg = now.getSeconds() * 6;
-      document.getElementById('hourHand').style.transform   = `translateX(-50%) rotate(${hoursDeg      }deg)`;
+      document.getElementById('hourHand').style.transform   = `translateX(-50%) rotate(${hoursDeg}deg)`;
       document.getElementById('minuteHand').style.transform = `translateX(-50%) rotate(${minutesDeg}deg)`;
       document.getElementById('secondHand').style.transform = `translateX(-50%) rotate(${secondsDeg}deg)`;
     }
 
     // 초기화
     createMagnets();
+    loadState();
+
     updateAttendance();
     updateEtcReasonPanel();
     updateClock();
@@ -668,6 +719,7 @@
       if (sh) sh.style.transition = 'transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1)';
     }, 1000);
   </script>
+
   <script>
     // 게임 FAB 토글 및 메뉴 동작
     (function () {
@@ -704,7 +756,6 @@
 
       if (gomoku) {
         gomoku.addEventListener('click', () => {
-          // gomoku.html로 이동
           window.location.href = 'gomoku.html';
         });
       }

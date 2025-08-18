@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Split Second - 반응속도 대결</title>
+    <style>
+        /* 기본 스타일 및 폰트 설정 */
+        :root {
+            --p1-color: #3b82f6; /* 파란색 */
+            --p2-color: #ef4444; /* 빨간색 */
+            --target-color: #facc15; /* 노란색 */
+            --bg-color: #111827; /* 어두운 배경 */
+            --text-color: #f3f4f6; /* 밝은 텍스트 */
+            --border-color: #374151;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Noto Sans KR', sans-serif;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none;
+        }
+
+        /* 메인 게임 컨테이너 */
+        #game-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        /* 각 플레이어 영역 */
+        .player-section {
+            width: 50%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        #player1 {
+            border-right: 2px solid var(--border-color);
+        }
+
+        #player2 {
+            border-left: 2px solid var(--border-color);
+        }
+        
+        /* 플레이어 정보 표시 (이름, 라운드) */
+        .player-info {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+        }
+
+        .player-info h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        #player1 .player-info h2 { color: var(--p1-color); }
+        #player2 .player-info h2 { color: var(--p2-color); }
+
+        .round-display {
+            font-size: 1.5rem;
+            color: #9ca3af;
+        }
+
+        /* 메시지 영역 (준비, 카운트다운 등) */
+        .message-area {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+        }
+        
+        /* 점수 표시 영역 */
+        .score-display {
+            position: absolute;
+            bottom: 20px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+        
+        .score-display .label {
+            font-size: 1rem;
+            color: #9ca3af;
+        }
+
+        /* 준비 버튼 */
+        .ready-btn {
+            padding: 20px 40px;
+            font-size: 2rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-color);
+            background-color: #374151;
+        }
+
+        .ready-btn:active {
+            transform: scale(0.95);
+        }
+
+        .ready-btn.ready {
+            background-color: #16a34a; /* 초록색 */
+            box-shadow: 0 0 20px #16a34a;
+        }
+
+        /* 게임 타겟 (노란 공) */
+        .target {
+            width: 80px;
+            height: 80px;
+            background-color: var(--target-color);
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            box-shadow: 0 0 25px var(--target-color);
+            transition: transform 0.1s ease;
+        }
+        
+        .target:active {
+            transform: scale(0.9);
+        }
+
+        /* 결과 화면 오버레이 */
+        #results-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            color: var(--text-color);
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #results-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #winner-display {
+            font-size: 5rem;
+            font-weight: 700;
+            margin-bottom: 40px;
+        }
+
+        .results-details {
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            max-width: 800px;
+            font-size: 1.5rem;
+            margin-bottom: 50px;
+        }
+        
+        .result-box h3 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        
+        #p1-results h3 { color: var(--p1-color); }
+        #p2-results h3 { color: var(--p2-color); }
+
+        .result-box p {
+            margin-bottom: 10px;
+        }
+        
+        .result-box .value {
+            font-weight: 700;
+            font-size: 2.2rem;
+        }
+        
+        #play-again-btn {
+            padding: 20px 50px;
+            font-size: 2rem;
+            background-color: var(--p1-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        #play-again-btn:hover {
+            opacity: 0.9;
+        }
+        #play-again-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 모바일/태블릿 반응형 */
+        @media (max-width: 768px) {
+            .player-info h2 { font-size: 1.5rem; }
+            .round-display { font-size: 1.2rem; }
+            .message-area { font-size: 3rem; }
+            .score-display { font-size: 1.5rem; }
+            .ready-btn { font-size: 1.5rem; padding: 15px 30px; }
+            .target { width: 60px; height: 60px; }
+            #winner-display { font-size: 3rem; }
+            .results-details { flex-direction: column; align-items: center; }
+            .result-box { margin-bottom: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- 플레이어 1 영역 -->
+        <div class="player-section" id="player1">
+            <div class="player-info">
+                <h2>PLAYER 1</h2>
+                <p class="round-display" id="p1-round">라운드: 0/10</p>
+            </div>
+            <div class="message-area" id="p1-message">
+                <button class="ready-btn" id="p1-ready-btn">준비</button>
+            </div>
+            <div class="score-display" id="p1-score">
+                <span class="label">이번 기록: </span>
+                <span id="p1-current-time">0.000초</span>
+            </div>
+        </div>
+
+        <!-- 플레이어 2 영역 -->
+        <div class="player-section" id="player2">
+            <div class="player-info">
+                <h2>PLAYER 2</h2>
+                <p class="round-display" id="p2-round">라운드: 0/10</p>
+            </div>
+            <div class="message-area" id="p2-message">
+                <button class="ready-btn" id="p2-ready-btn">준비</button>
+            </div>
+            <div class="score-display" id="p2-score">
+                <span class="label">이번 기록: </span>
+                <span id="p2-current-time">0.000초</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="results-overlay">
+        <h1 id="winner-display"></h1>
+        <div class="results-details">
+            <div class="result-box" id="p1-results">
+                <h3>PLAYER 1</h3>
+                <p>평균 반응 속도</p>
+                <p class="value" id="p1-avg-time">0.000초</p>
+                <p>최고 기록</p>
+                <p class="value" id="p1-best-time">0.000초</p>
+            </div>
+            <div class="result-box" id="p2-results">
+                <h3>PLAYER 2</h3>
+                <p>평균 반응 속도</p>
+                <p class="value" id="p2-avg-time">0.000초</p>
+                <p>최고 기록</p>
+                <p class="value" id="p2-best-time">0.000초</p>
+            </div>
+        </div>
+        <button id="play-again-btn">다시 하기</button>
+    </div>
+
+    <script>
+        // --- DOM 요소 가져오기 ---
+        const player1Section = document.getElementById('player1');
+        const player2Section = document.getElementById('player2');
+        const p1ReadyBtn = document.getElementById('p1-ready-btn');
+        const p2ReadyBtn = document.getElementById('p2-ready-btn');
+        const p1Message = document.getElementById('p1-message');
+        const p2Message = document.getElementById('p2-message');
+        const p1Round = document.getElementById('p1-round');
+        const p2Round = document.getElementById('p2-round');
+        const p1CurrentTime = document.getElementById('p1-current-time');
+        const p2CurrentTime = document.getElementById('p2-current-time');
+        
+        const resultsOverlay = document.getElementById('results-overlay');
+        const winnerDisplay = document.getElementById('winner-display');
+        const p1AvgTime = document.getElementById('p1-avg-time');
+        const p1BestTime = document.getElementById('p1-best-time');
+        const p2AvgTime = document.getElementById('p2-avg-time');
+        const p2BestTime = document.getElementById('p2-best-time');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        // --- 게임 상태 변수 ---
+        let p1Ready = false;
+        let p2Ready = false;
+        let gameStarted = false;
+        let currentRound = 0;
+        const totalRounds = 10;
+        
+        let p1Scores = [];
+        let p2Scores = [];
+        
+        let roundStartTime;
+        let p1TargetClicked = false;
+        let p2TargetClicked = false;
+        let roundTimer;
+
+        // --- 게임 로직 함수 ---
+
+        /** 게임 초기화 함수 */
+        function init() {
+            // 상태 변수 초기화
+            p1Ready = false;
+            p2Ready = false;
+            gameStarted = false;
+            currentRound = 0;
+            p1Scores = [];
+            p2Scores = [];
+            
+            // UI 초기화
+            updateRoundDisplay();
+            p1Message.innerHTML = '';
+            p2Message.innerHTML = '';
+            p1Message.appendChild(p1ReadyBtn);
+            p2Message.appendChild(p2ReadyBtn);
+            p1ReadyBtn.classList.remove('ready');
+            p2ReadyBtn.classList.remove('ready');
+            p1ReadyBtn.disabled = false;
+            p2ReadyBtn.disabled = false;
+            
+            p1CurrentTime.textContent = '0.000초';
+            p2CurrentTime.textContent = '0.000초';
+            
+            resultsOverlay.classList.remove('show');
+            
+            // 기존 타겟 제거
+            document.querySelectorAll('.target').forEach(t => t.remove());
+        }
+
+        /** 라운드 표시 업데이트 */
+        function updateRoundDisplay() {
+            const roundText = `라운드: ${currentRound}/${totalRounds}`;
+            p1Round.textContent = roundText;
+            p2Round.textContent = roundText;
+        }
+
+        /** 준비 버튼 핸들러 */
+        function handleReady(player) {
+            if (gameStarted) return;
+
+            if (player === 1) {
+                p1Ready = !p1Ready;
+                p1ReadyBtn.classList.toggle('ready', p1Ready);
+                p1ReadyBtn.textContent = p1Ready ? '준비 완료' : '준비';
+            } else {
+                p2Ready = !p2Ready;
+                p2ReadyBtn.classList.toggle('ready', p2Ready);
+                p2ReadyBtn.textContent = p2Ready ? '준비 완료' : '준비';
+            }
+
+            if (p1Ready && p2Ready) {
+                startGame();
+            }
+        }
+
+        /** 게임 시작 */
+        function startGame() {
+            gameStarted = true;
+            p1ReadyBtn.style.display = 'none';
+            p2ReadyBtn.style.display = 'none';
+            
+            let countdown = 3;
+            p1Message.textContent = countdown;
+            p2Message.textContent = countdown;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    p1Message.textContent = countdown;
+                    p2Message.textContent = countdown;
+                } else {
+                    clearInterval(countdownInterval);
+                    p1Message.textContent = '';
+                    p2Message.textContent = '';
+                    nextRound();
+                }
+            }, 1000);
+        }
+
+        /** 다음 라운드 진행 */
+        function nextRound() {
+            if (currentRound >= totalRounds) {
+                showResults();
+                return;
+            }
+            
+            currentRound++;
+            updateRoundDisplay();
+            
+            p1TargetClicked = false;
+            p2TargetClicked = false;
+            p1CurrentTime.textContent = '...';
+            p2CurrentTime.textContent = '...';
+            
+            // 1~3초 사이의 랜덤 딜레이 후 타겟 생성
+            const delay = Math.random() * 2000 + 1000;
+            roundTimer = setTimeout(spawnTargets, delay);
+        }
+
+        /** 타겟 생성 */
+        function spawnTargets() {
+            // 플레이어 1 타겟 생성
+            createTarget(player1Section, 1);
+            // 플레이어 2 타겟 생성
+            createTarget(player2Section, 2);
+            
+            roundStartTime = performance.now();
+        }
+
+        /** 특정 영역에 타겟 생성하는 헬퍼 함수 */
+        function createTarget(section, player) {
+            const target = document.createElement('div');
+            target.classList.add('target');
+            
+            // 타겟 크기를 고려하여 랜덤 위치 계산 (가장자리에 너무 붙지 않도록)
+            const sectionRect = section.getBoundingClientRect();
+            const targetSize = 80;
+            const padding = 20;
+            
+            const randomTop = Math.random() * (sectionRect.height - targetSize - padding * 2) + padding;
+            const randomLeft = Math.random() * (sectionRect.width - targetSize - padding * 2) + padding;
+            
+            target.style.top = `${randomTop}px`;
+            target.style.left = `${randomLeft}px`;
+            
+            target.addEventListener('click', () => handleTargetClick(target, player));
+            
+            section.appendChild(target);
+        }
+        
+        /** 타겟 클릭 핸들러 */
+        function handleTargetClick(target, player) {
+            const clickTime = performance.now();
+            const reactionTime = (clickTime - roundStartTime) / 1000;
+            
+            if (player === 1 && !p1TargetClicked) {
+                p1TargetClicked = true;
+                p1Scores.push(reactionTime);
+                p1CurrentTime.textContent = `${reactionTime.toFixed(3)}초`;
+                target.remove();
+            } else if (player === 2 && !p2TargetClicked) {
+                p2TargetClicked = true;
+                p2Scores.push(reactionTime);
+                p2CurrentTime.textContent = `${reactionTime.toFixed(3)}초`;
+                target.remove();
+            }
+            
+            // 두 플레이어 모두 클릭했으면 다음 라운드로
+            if (p1TargetClicked && p2TargetClicked) {
+                nextRound();
+            }
+        }
+        
+        /** 결과 표시 */
+        function showResults() {
+            const p1Avg = p1Scores.reduce((a, b) => a + b, 0) / p1Scores.length;
+            const p2Avg = p2Scores.reduce((a, b) => a + b, 0) / p2Scores.length;
+            const p1Best = Math.min(...p1Scores);
+            const p2Best = Math.min(...p2Scores);
+            
+            p1AvgTime.textContent = `${p1Avg.toFixed(3)}초`;
+            p1BestTime.textContent = `${p1Best.toFixed(3)}초`;
+            p2AvgTime.textContent = `${p2Avg.toFixed(3)}초`;
+            p2BestTime.textContent = `${p2Best.toFixed(3)}초`;
+
+            if (p1Avg < p2Avg) {
+                winnerDisplay.textContent = 'PLAYER 1 승리!';
+                winnerDisplay.style.color = 'var(--p1-color)';
+            } else if (p2Avg < p1Avg) {
+                winnerDisplay.textContent = 'PLAYER 2 승리!';
+                winnerDisplay.style.color = 'var(--p2-color)';
+            } else {
+                winnerDisplay.textContent = '무승부!';
+                winnerDisplay.style.color = 'var(--text-color)';
+            }
+            
+            resultsOverlay.classList.add('show');
+        }
+
+        // --- 이벤트 리스너 등록 ---
+        p1ReadyBtn.addEventListener('click', () => handleReady(1));
+        p2ReadyBtn.addEventListener('click', () => handleReady(2));
+        playAgainBtn.addEventListener('click', () => {
+             // 버튼 숨기고 다시 표시하여 클릭 효과 초기화
+            p1ReadyBtn.style.display = 'block';
+            p2ReadyBtn.style.display = 'block';
+            p1ReadyBtn.textContent = '준비';
+            p2ReadyBtn.textContent = '준비';
+            init();
+        });
+
+        // --- 페이지 로드 시 게임 초기화 ---
+        window.onload = init;
+    </script>
+</body>
+</html>

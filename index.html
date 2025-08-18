@@ -846,6 +846,201 @@
 
   </script>
 
+  <!-- 정보(시간표) 버튼 -->
+  <div class="fab-container" id="infoFabContainer">
+    <button id="infoFab" class="fab" aria-haspopup="true" aria-expanded="false" aria-controls="infoMenu" title="정보 메뉴">
+      <i>i</i>
+    </button>
+    <div id="infoMenu" class="fab-menu" role="menu">
+      <button class="fab-item" role="menuitem" id="timetableItem">시간표 보기</button>
+    </div>
+  </div>
+
+  <!-- 시간표 팝업/모달 -->
+  <div id="timetableModal" class="modal-overlay" hidden>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="timetableTitle">
+      <div class="modal-header">
+        <h2 id="timetableTitle">주간 시간표 (1-3)</h2>
+        <button id="closeTimetableModal" class="close-btn" aria-label="닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="timetableStatus" class="status-bar">이번 주 시간표를 불러옵니다.</div>
+        <table id="timetableGrid"></table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================== 시간표 기능 ===================== */
+    (function() {
+      // --- 설정 ---
+      const KEY  = "da82433f0f3a4351bda4ca9a0f11fc7d";
+      const BASE = "https://open.neis.go.kr/hub/hisTimetable";
+      const COMMON = {
+        KEY,
+        ATPT_OFCDC_SC_CODE: "J10",
+        SD_SCHUL_CODE:      "7530560",
+        AY: "2025", SEM: "2", GRADE: "1",
+        Type: "json", pIndex: "1", pSize: "1000"
+      };
+      const CLASS_NO = "3";
+
+      // --- DOM 요소 ---
+      const modal = document.getElementById('timetableModal');
+      const openBtn = document.getElementById('timetableItem');
+      const closeBtn = document.getElementById('closeTimetableModal');
+      const infoFab = document.getElementById('infoFab');
+      const infoMenu = document.getElementById('infoMenu');
+      const statusEl = document.getElementById('timetableStatus');
+      const table = document.getElementById('timetableGrid');
+
+      let cachedTimetableData = null; // 시간표 데이터 캐시 변수
+
+      if (!modal || !openBtn || !closeBtn || !infoFab || !infoMenu) return;
+
+      // --- 유틸리티 함수 ---
+      const fmtYMD = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}${m}${day}`;
+      };
+
+      function mondayOf(d) {
+        const x = new Date(d);
+        const day = (x.getDay() + 6) % 7; // Mon=0
+        x.setDate(x.getDate() - day);
+        x.setHours(0, 0, 0, 0);
+        return x;
+      }
+
+      // --- 렌더링 ---
+      function renderGrid(rows) {
+        const days = ["월", "화", "수", "목", "금"];
+        const periods = Array.from({ length: 7 }, (_, i) => i + 1);
+        const grid = Array.from({ length: 7 }, () => Array(5).fill(""));
+
+        for (const r of rows) {
+          const ymd = r.ALL_TI_YMD;
+          const perio = Number(r.PERIO);
+          const dt = new Date(Number(ymd.slice(0, 4)), Number(ymd.slice(4, 6)) - 1, Number(ymd.slice(6, 8)));
+          const dow = (dt.getDay() + 6) % 7;
+          if (dow >= 5 || perio < 1 || perio > 7) continue;
+
+          const subject = r.ITRT_CNTNT || r.SUBJECT || "";
+          const room = r.CLRM_NM ? `<br><small>(${r.CLRM_NM})</small>` : "";
+          grid[perio - 1][dow] = subject + room;
+        }
+
+        table.innerHTML = `
+          <thead><tr>
+            <th>교시</th>
+            ${days.map(d => `<th>${d}</th>`).join("")}
+          </tr></thead>
+        `;
+        const body = periods.map(p => {
+          const tds = grid[p - 1].map(txt => `<td>${txt}</td>`).join("");
+          return `<tr><th>${p}</th>${tds}</tr>`;
+        }).join("");
+        table.innerHTML += `<tbody>${body}</tbody>`;
+      }
+
+      // --- API 호출 ---
+      async function fetchWeekTimetable(weekStartDate) {
+        const from = fmtYMD(weekStartDate);
+        const to = fmtYMD(new Date(weekStartDate.getFullYear(), weekStartDate.getMonth(), weekStartDate.getDate() + 4));
+        const qs = new URLSearchParams({
+          ...COMMON,
+          TI_FROM_YMD: from,
+          TI_TO_YMD: to,
+          CLASS_NM: CLASS_NO,
+          SCHUL_CRSE_SC_NM: "고등학교",
+          DGHT_CRSE_SC_NM: "주간",
+          ORD_SC_NM: "공업계",
+          DDDEP_NM: "웹프로그래밍과"
+        });
+
+        const url = `${BASE}?${qs.toString()}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (data.RESULT) {
+          const { CODE, MESSAGE } = data.RESULT;
+          if (CODE !== "INFO-000") throw new Error(`${CODE}: ${MESSAGE}`);
+        }
+        const rows = data.hisTimetable?.[1]?.row ?? [];
+        const filtered = rows.filter(r => (r.CLASS_NM ?? r.CLRM_NM) == CLASS_NO);
+        return filtered;
+      }
+
+      // --- 이벤트 핸들러 ---
+      async function loadAndShowTimetable() {
+        // 캐시된 데이터가 있으면 즉시 렌더링
+        if (cachedTimetableData) {
+          renderGrid(cachedTimetableData);
+          return;
+        }
+
+        // 캐시된 데이터가 없으면 API 호출
+        try {
+          statusEl.textContent = "시간표를 불러오는 중…";
+          table.innerHTML = "";
+          const monday = mondayOf(new Date()); // 항상 이번 주
+          const rows = await fetchWeekTimetable(monday);
+          
+          cachedTimetableData = rows; // 결과를 캐시에 저장
+
+          statusEl.textContent = `이번 주 시간표 (${monday.toLocaleDateString()} ~)`;
+          renderGrid(rows);
+        } catch (e) {
+          statusEl.textContent = "오류: " + e.message;
+          console.error(e);
+        }
+      }
+
+      function closeInfoMenu() {
+        infoMenu.classList.remove('open');
+        infoFab.setAttribute('aria-expanded', 'false');
+      }
+
+      // --- 이벤트 리스너 바인딩 ---
+      infoFab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = infoMenu.classList.toggle('open');
+        infoFab.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      openBtn.addEventListener('click', () => {
+        modal.hidden = false;
+        loadAndShowTimetable();
+        closeInfoMenu();
+      });
+
+      closeBtn.addEventListener('click', () => {
+        modal.hidden = true;
+      });
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.hidden = true;
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!infoMenu.classList.contains('open')) return;
+        const t = e.target;
+        if (t === infoFab || infoFab.contains(t) || infoMenu.contains(t)) return;
+        closeInfoMenu();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (!modal.hidden) modal.hidden = true;
+          else closeInfoMenu();
+        }
+      });
+    })();
+  </script>
+
   <!-- ===== 소음 측정 + 임계치 경고음 (버튼으로 On/Off) ===== -->
   <script>
     // 임계치(dB). 환경/마이크에 따라 보정 권장

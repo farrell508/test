@@ -258,15 +258,7 @@ body.fullscreen .fullscreen-btn { display: none; }
 }
 .reason-item .reason-text { color: #fff; opacity: 0.95; font-size: 14px; }
 
-/* (선택) 이유가 달린 자석 표시 배지 */
-.magnet.has-reason::after {
-    content: "i";
-    position: absolute; right: -4px; top: -4px;
-    width: 18px; height: 18px; border-radius: 50%;
-    background: #ff3e3e; color: #fff; font-size: 12px; font-weight: 700;
-    display: grid; place-items: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-}
+
 
 /* 색상 군 */
 .magnet.color-red    { background: linear-gradient(135deg, #ff4444, #cc0000); }
@@ -320,4 +312,62 @@ body.fullscreen .fullscreen-btn { display: none; }
     width: 100%;
     opacity: 0.8;
 }
+
+#start-time, #end-time{
+    position:absolute;
+    color: white;
+    font-weight: 600;
+    bottom: 50px;
+}
+
+#start-time {
+    right: 200px;
+}
+
+#end-time {
+    left: 200px;
+}
+
+#progressbar {
+    /* 크기 설정은 그대로 유지해도 됩니다 */
+    inline-size: 15em;       /* 가로 */
+    block-size: 2em;         /* 세로 */
+    width: 15em;
+    height: 2em;
+
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    border-radius: 24px;
+    background: rgba(40,40,40,0.95); /* 바탕 */
+    position: relative;
+    overflow: hidden;         /* 둥근 모서리에 맞게 내부를 깔끔히 자름 */
+}
+
+#progressbar::-webkit-progress-bar { background: transparent; }
+#progressbar::-webkit-progress-value { background: transparent; }
+#progressbar::-moz-progress-bar { background: transparent; }
+
+/* 우리가 직접 그리는 값 막대 */
+#progressbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0.7;
+    transform: translateX(-100%);     /* 0% */
+    transform-origin: left center;
+}
+
+/* JS에서 --p(0~100)만 업데이트하면 됩니다 */
+#progressbar[value]::before {
+    transform: translateX(calc(-100% + (var(--p, 0) * 1%)));
+}
+
+.progress {
+    position: absolute;
+    right: 110px;
+    top: 300px;
+}
+
 

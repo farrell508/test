@@ -101,6 +101,7 @@
     <div id="gameMenu" class="fab-menu" role="menu">
       <button class="fab-item" role="menuitem" id="fireworksItem">폭죽 터뜨리기</button>
       <button class="fab-item" role="menuitem" id="speedTest">반응 속도 대결</button>
+      <button class="fab-item" role="menuitem" id="circleItem">원 그리기</button>
       <button class="fab-item" role="menuitem" id="gomokuItem">오목 게임</button>
     </div>
   </div>
@@ -774,6 +775,7 @@
       const menu = document.getElementById('gameMenu');
       const gomoku = document.getElementById('gomokuItem');
       const speedt = document.getElementById('speedTest');
+      const circlet = document.getElementById('circleItem');
       const fireworksBtn = document.getElementById('fireworksItem');
       let menuFireworks = null;
       let fwStopTimer = null;
@@ -810,6 +812,11 @@
       if (speedt) {
         speedt.addEventListener('click', () => {
           window.location.href = 'speed.html';
+        });
+      }
+      if (circlet) {
+        circlet.addEventListener('click', () => {
+          window.location.href = 'circle.html';
         });
       }
       if (fireworksBtn) {

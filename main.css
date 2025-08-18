@@ -367,7 +367,105 @@ body.fullscreen .fullscreen-btn { display: none; }
 .progress {
     position: absolute;
     right: 110px;
-    top: 300px;
+    top: 270px;
 }
 
+/* ===== Reason Quick Buttons ===== */
+.reason-quick {
+    margin-top: 12px;
+  }
+  
+  .reason-quick__title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 10px;
+  }
+  
+  .reason-quick__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    max-height: 36vh;                 /* 버튼이 많아지면 스크롤 */
+    overflow: auto;
+    padding-right: 4px;                /* 스크롤바 여백 */
+  }
+  
+  /* 버튼 기본 */
+  .reason-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  
+    min-width: 120px;                  /* “특정 크기” */
+    height: 44px;
+    padding: 0 14px;
+  
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    backdrop-filter: blur(8px);
+  
+    color: #fff;
+    font-size: 18px;                   /* 모달 폰트(큰 편)에 맞춰 가독성 확보 */
+    font-weight: 500;
+    letter-spacing: .2px;
+  
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+  }
+  
+  /* Hover / Active / Focus */
+  .reason-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+    box-shadow:
+      0 6px 18px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  
+  .reason-btn:active {
+    transform: translateY(0);
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  
+  .reason-btn:focus-visible {
+    outline: none;
+    border-color: rgba(255,62,62,0.7);
+    box-shadow:
+      0 0 0 3px rgba(255,62,62,0.25),
+      0 6px 18px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  
+  /* 선택된 느낌을 주고 싶으면 JS에서 .is-selected 토글 가능 */
+  .reason-btn.is-selected {
+    border-color: rgba(255,62,62,0.8);
+    background: linear-gradient(180deg, rgba(255,62,62,0.22), rgba(255,62,62,0.12));
+  }
+  
+  /* 스크롤바(다크 톤) */
+  .reason-quick__grid::-webkit-scrollbar {
+    width: 8px;
+  }
+  .reason-quick__grid::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 8px;
+  }
+  .reason-quick__grid::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+  }
 

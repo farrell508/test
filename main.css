@@ -510,3 +510,31 @@ body.fullscreen .fullscreen-btn { display: none; }
   vertical-align: middle;
   line-height: 1.4;
 }
+
+/* 점심 메뉴 리스트 스타일 */
+#lunchContainer {
+  text-align: center;
+}
+.lunch-menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0 0;
+  font-size: 22px;
+  line-height: 2;
+  display: inline-block;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.85);
+}
+.lunch-menu-list li {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.lunch-menu-list li:last-child {
+  border-bottom: none;
+}
+.lunch-calorie {
+  margin-top: 20px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}

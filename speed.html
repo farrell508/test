@@ -317,7 +317,8 @@
         let p1Scores = [];
         let p2Scores = [];
         
-        let roundStartTime;
+        let p1StartTime;
+        let p2StartTime;
         let p1TargetClicked = false;
         let p2TargetClicked = false;
         let roundTimer;
@@ -426,12 +427,27 @@
 
         /** 타겟 생성 */
         function spawnTargets() {
-            // 플레이어 1 타겟 생성
-            createTarget(player1Section, 1);
-            // 플레이어 2 타겟 생성
-            createTarget(player2Section, 2);
-            
-            roundStartTime = performance.now();
+            // 두 플레이어의 스폰 시점을 랜덤하게 분리 (동시 터치 방지)
+            const offset = Math.random() * 800 + 200; // 200~1000ms 사이 간격
+            const firstIsP1 = Math.random() < 0.5;
+
+            if (firstIsP1) {
+                // P1 먼저 생성
+                createTarget(player1Section, 1);
+                p1StartTime = performance.now();
+                setTimeout(() => {
+                    createTarget(player2Section, 2);
+                    p2StartTime = performance.now();
+                }, offset);
+            } else {
+                // P2 먼저 생성
+                createTarget(player2Section, 2);
+                p2StartTime = performance.now();
+                setTimeout(() => {
+                    createTarget(player1Section, 1);
+                    p1StartTime = performance.now();
+                }, offset);
+            }
         }
 
         /** 특정 영역에 타겟 생성하는 헬퍼 함수 */
@@ -458,7 +474,8 @@
         /** 타겟 클릭 핸들러 */
         function handleTargetClick(target, player) {
             const clickTime = performance.now();
-            const reactionTime = (clickTime - roundStartTime) / 1000;
+            const startTime = player === 1 ? p1StartTime : p2StartTime;
+            const reactionTime = (clickTime - startTime) / 1000;
             
             if (player === 1 && !p1TargetClicked) {
                 p1TargetClicked = true;

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Circle Duel — 누가 더 완벽한 원?</title>
+  <style>
+  :root{
+    --bg:#ffffff; --panel:#ffffff; --text:#111827; --muted:#6b7280; --line:#e5e7eb;
+    --accentL:#2563eb; --accentR:#7c3aed; --win:#22c55e; --lose:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:#fff;color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Noto Sans,Apple SD Gothic Neo,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";display:flex;flex-direction:column;gap:12px}
+  header{padding:16px 16px 0}
+  h1{margin:0 0 4px;font-size:clamp(20px,3vw,26px)}
+  .sub{color:var(--muted);font-size:13px}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;padding:8px 16px 0;align-items:center}
+  button,select,input[type="number"]{background:#fff;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;line-height:1}
+  button{cursor:pointer}
+  button:hover{background:#f5f5f5}
+  button.primary{font-weight:600}
+  button.ghost{background:#fff}
+  .sep{flex:1}
+  label.opt{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+  .pill{background:#fff;border:1px solid var(--line);padding:6px 8px;border-radius:999px;display:inline-flex;gap:8px;align-items:center}
+
+  .arena{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 16px 16px;align-items:start}
+  .side{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .side header{padding:8px 12px;background:#fafafa;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;margin:0}
+  .tag{font-weight:700;letter-spacing:.2px;font-size:12px;padding:5px 8px;border-radius:999px;border:1px solid var(--line)}
+  .tag.left{color:var(--accentL)}
+  .tag.right{color:var(--accentR)}
+
+  .canvas-wrap{position:relative;width:100%;height:clamp(260px,36vh,420px)}
+  canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  .grid::before{display:none}
+
+  .hud{position:absolute;left:8px;bottom:8px;font-size:12px;color:var(--muted);pointer-events:none}
+
+  .statusbar{display:flex;gap:10px;padding:0 16px 8px;color:var(--muted);font-size:13px;align-items:center}
+  .countdown{font-variant-numeric:tabular-nums;font-weight:700;color:#111}
+  .score-badge{position:absolute;right:8px;top:8px;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px;background:#fff;border:1px solid var(--line)}
+  .winner{border:2px solid var(--win)}
+  .loser{border:2px solid var(--lose)}
+
+  .help{padding:0 16px 16px;font-size:12px;color:var(--muted)}
+  .help details{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+  .help summary{cursor:pointer;user-select:none}
+  .help code{background:#f3f4f6;padding:2px 6px;border-radius:5px}
+
+  @media (max-width:860px){
+    .arena{grid-template-columns:1fr}
+    .canvas-wrap{height:clamp(240px,34vh,380px)}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Circle Duel — 더 완벽한 원을 그리는 쪽이 승리!</h1>
+    <div class="sub">좌/우 패널에 원을 그리세요. 제한 시간 안에 더 <b>원형에 가까운</b> 사람이 이깁니다. (터치 기기에서는 두 사람이 동시에 가능)</div>
+  </header>
+
+  <div class="controls">
+    <button id="startBtn" class="primary">라운드 시작</button>
+    <button id="resetBtn" class="ghost">초기화</button>
+    <span class="sep"></span>
+    <span class="pill">
+      <label class="opt">라운드 시간(초)
+        <input id="duration" type="number" value="8" min="3" max="30" style="width:70px" />
+      </label>
+      <label class="opt"><input id="showFit" type="checkbox" checked />피팅 원 표시</label>
+      <label class="opt"><input id="liveInk" type="checkbox" checked />그리는 즉시 선 보이기</label>
+    </span>
+  </div>
+
+  <div class="statusbar">
+    <div>상태: <span id="statusText">대기 중</span></div>
+    <div>| 남은 시간: <span class="countdown" id="timer">—</span></div>
+    <div>| 채점: <span id="resultText">—</span></div>
+  </div>
+
+  <main class="arena">
+    <section class="side" id="leftSide">
+      <header>
+        <div class="tag left">LEFT</div>
+        <div class="score-badge" id="scoreL">Score — 0</div>
+      </header>
+      <div class="canvas-wrap grid">
+        <canvas id="canvasL" aria-label="Left canvas"></canvas>
+      </div>
+      <div class="hud">마우스/터치로 원을 그리세요</div>
+    </section>
+    <section class="side" id="rightSide">
+      <header>
+        <div class="tag right">RIGHT</div>
+        <div class="score-badge" id="scoreR">Score — 0</div>
+      </header>
+      <div class="canvas-wrap grid">
+        <canvas id="canvasR" aria-label="Right canvas"></canvas>
+      </div>
+      <div class="hud">마우스/터치로 원을 그리세요</div>
+    </section>
+  </main>
+
+  <div class="help">
+    <details>
+      <summary>채점 방식 (눌러서 열기)</summary>
+      <ul>
+        <li>그려진 점들을 이용해 <b>최소제곱 원 피팅</b>을 계산합니다.</li>
+        <li>각 점의 반지름이 평균 반지름과 얼마나 다른지의 <b>정규화 RMSE</b>를 구해요.</li>
+        <li>시작/끝점의 <b>닫힘 정도</b>와 원 둘레를 얼마나 <b>커버</b>했는지도 반영합니다.</li>
+        <li>최종 점수는 대략 <code>exp(-6·오차) × exp(-0.8·닫힘오차) × coverage</code>를 0–100으로 환산합니다.</li>
+      </ul>
+      <div>힌트: 크게, 한 번에 매끄럽게 그릴수록 유리합니다. 너무 작은 원(반지름 &lt; 30px)은 불이익이 있어요.</div>
+    </details>
+  </div>
+
+  <script>
+    // Utility: DPR-aware canvas setup
+    function setupHiDPICanvas(canvas){
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      return ctx;
+    }
+
+    class Player {
+      constructor(sideId, canvasId, scoreBadgeId, color){
+        this.sideEl = document.getElementById(sideId);
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = setupHiDPICanvas(this.canvas);
+        this.scoreBadge = document.getElementById(scoreBadgeId);
+        this.color = color;
+        this.points = []; // {x,y}
+        this.activePointer = null;
+        this._bind();
+        this.render();
+      }
+      resize(){
+        // Keep points, just resize and redraw
+        this.ctx = setupHiDPICanvas(this.canvas);
+        this.render(true);
+      }
+      clear(){
+        this.points = [];
+        const {ctx, canvas} = this;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        this.scoreBadge.textContent = 'Score — 0';
+        this.sideEl.classList.remove('winner','loser');
+      }
+      canvasXY(e){
+        const r = this.canvas.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+      }
+      _bind(){
+        const onDown = (e)=>{
+          if(!game.roundActive) return;
+          if(this.activePointer !== null) return; // one pointer per side
+          this.activePointer = e.pointerId;
+          this.points.push(this.canvasXY(e));
+          this.render();
+        };
+        const onMove = (e)=>{
+          if(!game.roundActive) return;
+          if(e.pointerId !== this.activePointer) return;
+          this.points.push(this.canvasXY(e));
+          if(game.liveInk) this.render();
+        };
+        const onUp = (e)=>{
+          if(e.pointerId === this.activePointer){ this.activePointer = null; }
+        };
+        this.canvas.addEventListener('pointerdown', onDown);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+      }
+      render(showOnly){
+        const {ctx, canvas} = this;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // ink
+        if(this.points.length > 1){
+          ctx.beginPath();
+          ctx.moveTo(this.points[0].x, this.points[0].y);
+          for(let i=1;i<this.points.length;i++) ctx.lineTo(this.points[i].x, this.points[i].y);
+          ctx.lineWidth = 3.0; ctx.strokeStyle = this.color; ctx.globalAlpha = 0.95; ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        // optional fitted circle overlay drawn later by game.drawFit()
+      }
+    }
+
+    const game = {
+      left: null, right: null,
+      roundActive: false,
+      liveInk: true,
+      showFit: true,
+      timerId: null,
+      timeLeft: 0,
+      duration: 8,
+    };
+
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+    // Least squares circle fit: x^2 + y^2 = A x + B y + C
+    function fitCircle(points){
+      const n = points.length;
+      if(n < 20) return { ok:false, reason:'not-enough', score: 0 };
+      let sumX=0, sumY=0, sumXX=0, sumYY=0, sumXY=0, sumZX=0, sumZY=0;
+      for(const p of points){
+        const x = p.x, y = p.y; const z = x*x + y*y;
+        sumX += x; sumY += y; sumXX += x*x; sumYY += y*y; sumXY += x*y; sumZX += z*x; sumZY += z*y;
+      }
+      // Solve normal equations for [A,B,C]
+      // [sumXX sumXY sumX] [A] = [sumZX]
+      // [sumXY sumYY sumY] [B]   [sumZY]
+      // [sumX  sumY  n   ] [C]   [sumZ ]  where sumZ = sum(x^2+y^2)
+      const sumZ = sumXX + sumYY;
+      // Build matrix and RHS
+      const M = [
+        [sumXX, sumXY, sumX],
+        [sumXY, sumYY, sumY],
+        [sumX , sumY , n   ]
+      ];
+      const b = [sumZX, sumZY, sumZ];
+      const sol = solve3x3(M, b);
+      if(!sol.ok) return { ok:false, reason:'singular', score: 0 };
+      const A = sol.x[0], B = sol.x[1], C = sol.x[2];
+      const cx = A/2, cy = B/2;
+      let r2 = cx*cx + cy*cy + C;
+      if(!(r2>0)) return { ok:false, reason:'bad-radius', score: 0 };
+      const r = Math.sqrt(r2);
+      // residuals
+      let err2 = 0; let minR=Infinity, maxR=-Infinity; const bins = new Uint8Array(360);
+      const first = points[0], last = points[points.length-1];
+      for(const p of points){
+        const dx = p.x - cx, dy = p.y - cy; const d = Math.hypot(dx,dy);
+        minR = Math.min(minR, d); maxR = Math.max(maxR, d);
+        const res = d - r; err2 += res*res;
+        // angle bin for coverage
+        let ang = Math.atan2(dy, dx) * 180/Math.PI; if(ang<0) ang += 360; const k = (ang|0) % 360; bins[k] = 1;
+      }
+      const rmse = Math.sqrt(err2 / n);
+      const nrmse = rmse / r; // 0 is perfect
+      // closure gap
+      const closure = Math.hypot(last.x - first.x, last.y - first.y) / r; // relative
+      // coverage
+      let covered = 0; for(let i=0;i<360;i++) covered += bins[i];
+      const coverage = covered / 360; // 0..1
+      // size penalty
+      const sizePenalty = r < 30 ? (r/30) : 1; // discourage tiny scribbles
+      const densityPenalty = clamp(n/100, 0.6, 1); // too few points => slight penalty
+      const quality = Math.exp(-6*nrmse) * Math.exp(-0.8*closure) * clamp(coverage/0.7, 0, 1) * sizePenalty * densityPenalty;
+      const score = Math.round(clamp(quality, 0, 1) * 100);
+      return { ok:true, cx, cy, r, rmse, nrmse, closure, coverage, score };
+    }
+
+    function solve3x3(M, b){
+      // Gaussian elimination with partial pivoting
+      const A = [M[0].slice(), M[1].slice(), M[2].slice()];
+      const rhs = b.slice();
+      const n = 3;
+      for(let i=0;i<n;i++){
+        // pivot
+        let maxRow=i; let maxVal=Math.abs(A[i][i]);
+        for(let r=i+1;r<n;r++){ const v=Math.abs(A[r][i]); if(v>maxVal){maxVal=v; maxRow=r;} }
+        if(maxVal < 1e-9) return {ok:false};
+        if(maxRow!==i){ [A[i],A[maxRow]]=[A[maxRow],A[i]]; [rhs[i],rhs[maxRow]]=[rhs[maxRow],rhs[i]]; }
+        // normalize row i
+        const piv=A[i][i];
+        for(let c=i;c<n;c++) A[i][c]/=piv; rhs[i]/=piv;
+        // eliminate others
+        for(let r=0;r<n;r++) if(r!==i){ const f=A[r][i]; if(f!==0){ for(let c=i;c<n;c++) A[r][c]-=f*A[i][c]; rhs[r]-=f*rhs[i]; } }
+      }
+      return {ok:true, x: rhs};
+    }
+
+    function drawFit(player, fit, color){
+      const {ctx} = player;
+      if(!fit || !fit.ok) return;
+      ctx.save();
+      ctx.beginPath(); ctx.setLineDash([8,6]); ctx.lineWidth = 2.2; ctx.strokeStyle = color;
+      // draw circle path
+      const steps = 180; // approximate circle
+      for(let i=0;i<=steps;i++){
+        const t = i/steps * Math.PI*2; const x = fit.cx + Math.cos(t)*fit.r; const y = fit.cy + Math.sin(t)*fit.r;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      // center point
+      ctx.setLineDash([]); ctx.beginPath(); ctx.arc(fit.cx, fit.cy, 3.2, 0, Math.PI*2); ctx.fillStyle = '#cfe1ff'; ctx.fill();
+      ctx.restore();
+    }
+
+    function evaluateBoth(){
+      const fL = fitCircle(game.left.points);
+      const fR = fitCircle(game.right.points);
+      if(game.showFit){
+        game.left.render(true); drawFit(game.left, fL, 'rgba(110,231,255,0.9)');
+        game.right.render(true); drawFit(game.right, fR, 'rgba(167,139,250,0.9)');
+      }
+      const scoreL = fL.ok ? fL.score : 0;
+      const scoreR = fR.ok ? fR.score : 0;
+      document.getElementById('scoreL').textContent = `Score — ${scoreL}`;
+      document.getElementById('scoreR').textContent = `Score — ${scoreR}`;
+      // Decide winner
+      game.left.sideEl.classList.remove('winner','loser');
+      game.right.sideEl.classList.remove('winner','loser');
+
+      let resultStr = '';
+      function fmt(f){
+        return f.ok ? `오차 ${(f.nrmse*100).toFixed(1)}% · 닫힘 ${(f.closure*100).toFixed(1)}% · 커버 ${(f.coverage*100).toFixed(0)}%` : '유효한 선이 없음';
+      }
+
+      if(scoreL === scoreR){
+        resultStr = `무승부 (${scoreL} : ${scoreR})`;
+      } else if(scoreL > scoreR){
+        resultStr = `LEFT 승! (${scoreL} : ${scoreR})`;
+        game.left.sideEl.classList.add('winner');
+        game.right.sideEl.classList.add('loser');
+      } else {
+        resultStr = `RIGHT 승! (${scoreL} : ${scoreR})`;
+        game.right.sideEl.classList.add('winner');
+        game.left.sideEl.classList.add('loser');
+      }
+      document.getElementById('resultText').textContent = `${resultStr} | L: ${fmt(fL)} / R: ${fmt(fR)}`;
+    }
+
+    function startRound(){
+      // reset visuals but keep settings
+      game.left.clear(); game.right.clear();
+      game.left.render(); game.right.render();
+      document.getElementById('resultText').textContent = '—';
+
+      const status = document.getElementById('statusText');
+      const timerEl = document.getElementById('timer');
+
+      // 3-2-1 countdown
+      let count = 3;
+      status.textContent = '준비…'; timerEl.textContent = count.toString();
+      const pre = setInterval(()=>{
+        count--; timerEl.textContent = count>0 ? count.toString() : 'GO!';
+        if(count<=0){ clearInterval(pre); playPhase(); }
+      }, 700);
+
+      function playPhase(){
+        game.roundActive = true;
+        status.textContent = '그리기!';
+        let secs = game.duration;
+        timerEl.textContent = secs.toFixed(1);
+        const started = performance.now();
+        game.timerId = requestAnimationFrame(function tick(now){
+          const t = (now - started)/1000;
+          const left = Math.max(0, game.duration - t);
+          timerEl.textContent = left.toFixed(1);
+          if(left > 0){ game.timerId = requestAnimationFrame(tick); }
+          else { endPhase(); }
+        });
+      }
+
+      function endPhase(){
+        game.roundActive = false;
+        cancelAnimationFrame(game.timerId);
+        document.getElementById('timer').textContent = '0.0';
+        document.getElementById('statusText').textContent = '채점 중';
+        // Evaluate
+        setTimeout(()=>{
+          evaluateBoth();
+          document.getElementById('statusText').textContent = '완료';
+        }, 60);
+      }
+    }
+
+    function resetGame(){
+      game.left.clear(); game.right.clear();
+      document.getElementById('statusText').textContent = '대기 중';
+      document.getElementById('timer').textContent = '—';
+      document.getElementById('resultText').textContent = '—';
+    }
+
+    // Initialize
+    function init(){
+      game.left = new Player('leftSide','canvasL','scoreL','rgba(110,231,255,0.9)');
+      game.right = new Player('rightSide','canvasR','scoreR','rgba(167,139,250,0.9)');
+      window.addEventListener('resize', ()=>{ game.left.resize(); game.right.resize(); });
+
+      document.getElementById('startBtn').addEventListener('click', ()=>{
+        game.duration = clamp(parseFloat(document.getElementById('duration').value)||8, 3, 30);
+        startRound();
+      });
+      document.getElementById('resetBtn').addEventListener('click', resetGame);
+      document.getElementById('showFit').addEventListener('change', (e)=>{ game.showFit = e.target.checked; });
+      document.getElementById('liveInk').addEventListener('change', (e)=>{ game.liveInk = e.target.checked; });
+    }
+
+    init();
+  </script>
+</body>
+</html>

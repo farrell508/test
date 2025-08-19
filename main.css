@@ -276,7 +276,8 @@ body.fullscreen .fullscreen-btn { display: none; }
 .badge.color-purple { background: linear-gradient(135deg, #b36bff, #7a2cff); }
 
 /* FAB (게임) */
-.fab-container { position: fixed; right: 24px; bottom: 24px; z-index: 2000; }
+.gfab-container { position: fixed; right: 24px; bottom: 24px; z-index: 2000; }
+.ifab-container { position: fixed; right: 108px; bottom: 24px; z-index: 2000; }
 .fab {
   width: 64px; height: 64px; border-radius: 50%;
   background: #2a2a2a; border: 1px solid rgba(255,255,255,0.15);

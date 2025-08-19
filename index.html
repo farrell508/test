@@ -94,7 +94,7 @@
   <button class="exit-fullscreen-btn" onclick="exitFullscreen()">✕</button>
 
   <!-- 게임 버튼 -->
-  <div class="fab-container" aria-live="polite">
+  <div class="gfab-container" aria-live="polite">
     <button id="gameFab" class="fab" aria-haspopup="true" aria-expanded="false" aria-controls="gameMenu" title="게임 메뉴">
       <img src="src/game.png" alt="게임"/>
     </button>
@@ -103,6 +103,14 @@
       <button class="fab-item" role="menuitem" id="speedTest">반응 속도 대결</button>
       <button class="fab-item" role="menuitem" id="circleItem">원 그리기</button>
       <button class="fab-item" role="menuitem" id="gomokuItem">오목 게임</button>
+    </div>
+  </div>
+  <div class="ifab-container" aria-live="polite">
+    <button id="infoFab" class="fab" aria-haspopup="true" aria-expanded="false" aria-controls="infoMenu" title="게임 메뉴">
+      <img src="src/infoicn.png" alt="정보"/>
+    </button>
+    <div id="infoMenu" class="fab-menu" role="menu">
+      <button class="fab-item" role="menuitem" id="foodItem">오늘 급식 보기</button>
     </div>
   </div>
 

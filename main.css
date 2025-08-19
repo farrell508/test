@@ -470,3 +470,98 @@ body.fullscreen .fullscreen-btn { display: none; }
     border-radius: 8px;
   }
 
+/* Meal Modal */
+.meal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.meal-modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.meal-modal-content {
+  background: rgba(25, 25, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 30px;
+  width: 90%;
+  max-width: 800px;
+  color: #fff;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.meal-modal-overlay.visible .meal-modal-content {
+    transform: scale(1);
+}
+
+.meal-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.meal-modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.meal-modal-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.meal-modal-close:hover {
+  opacity: 1;
+}
+
+.meal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 25px;
+}
+
+.meal-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.meal-card-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: #ff8c1a;
+  margin-bottom: 15px;
+}
+
+.meal-card-menu {
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre-wrap;
+  flex-grow: 1;
+}
+

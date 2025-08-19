@@ -76,3 +76,17 @@ function resetSavedState() {
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
 }
+
+window.CLASS_INFO = { grade: 1, klass: 3, user: 'teacher' };
+
+window.logEvent = async function(payload) {
+  try {
+    await fetch('/api/events', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.warn('logEvent failed', e);
+  }
+};

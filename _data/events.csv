@@ -1,0 +1,9 @@
+ts,grade,klass,user,type,studentNo,from,to,reason,clientTime,ip,ua
+2025-08-18T13:43:19.454838+00:00,1,3,teacher,move,9,grid,grid,,2025-08-18T13:43:19.444Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:20.759983+00:00,1,3,teacher,move,16,grid,grid,,2025-08-18T13:43:20.754Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:32.944112+00:00,1,3,teacher,move,5,toilet,grid,,2025-08-18T13:43:32.936Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:35.661926+00:00,1,3,teacher,move,3,grid,grid,,2025-08-18T13:43:35.655Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:37.135175+00:00,1,3,teacher,move,4,club,grid,,2025-08-18T13:43:37.128Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:38.289895+00:00,1,3,teacher,move,10,club,grid,,2025-08-18T13:43:38.284Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:39.680249+00:00,1,3,teacher,move,20,afterschool,grid,,2025-08-18T13:43:39.672Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"
+2025-08-18T13:43:41.082820+00:00,1,3,teacher,move,26,absence,grid,,2025-08-18T13:43:41.075Z,127.0.0.1,"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36"

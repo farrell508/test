@@ -21,99 +21,131 @@
     placeholders.set(num, p);
   }
 
-  /* ===================== 자석 생성 ===================== */
-  function createMagnets() {
-    const container = document.getElementById('magnetContainer');
-    const rows = 6, cols = 5, size = 50, gap = 15;
-    let n = 1;
+// ==== 5개 단위 색상 순환 (빨→주→노→초→파→보 → 다시 빨) ====
+function getColorClassDynamic(num /*, end */) {
+  const bands = ['color-red','color-orange','color-yellow','color-green','color-blue','color-purple'];
+  const blockSize = 5;                     // 5개마다 색 변경
+  const idx = num % bands.length;
+  return bands[idx];
+}
 
-    function getColorClass(num) {
-      if (num >= 1 && num <= 5)   return 'color-red';
-      if (num >= 6 && num <= 10)  return 'color-orange';
-      if (num >= 11 && num <= 16) return 'color-yellow';
-      if (num >= 17 && num <= 21) return 'color-green';
-      if (num >= 22 && num <= 26) return 'color-blue';
-      if (num >= 27 && num <= 31) return 'color-purple';
-      return '';
+// 예) 1~5: red, 6~10: orange, 11~15: yellow, 16~20: green, 21~25: blue, 26~30: purple, 31~35: red...
+
+
+// ==== 색상 클래스 교체 유틸 ====
+function setColorClass(el, cls) {
+  el.classList.forEach(k => { if (k.startsWith('color-')) el.classList.remove(k); });
+  if (cls) el.classList.add(cls);
+}
+
+// ==== 번호 중복 자석 정리(같은 번호가 2개 이상이면 하나만 남기기) ====
+function dedupeMagnets() {
+  const byNum = new Map();
+  document.querySelectorAll('.magnet[data-number]:not(.placeholder)').forEach(el => {
+    const num = +el.dataset.number;
+    if (!byNum.has(num)) {
+      byNum.set(num, el);
+    } else {
+      const keep = byNum.get(num);
+      // 붙어있는 자석(.attached)을 우선 보존
+      const keepPref = keep.classList.contains('attached') ? 2 : 1;
+      const elPref   = el.classList.contains('attached')   ? 2 : 1;
+      if (elPref > keepPref) { keep.remove(); byNum.set(num, el); }
+      else { el.remove(); }
     }
+  });
+}
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (n > 31) break;
-        if (n === 12) { n++; if (n > 31) break; } // 12번 건너뛰기
+/**
+ * 1..end 생성, skipNumbers 제외
+ * - 기존 자석이 있으면 재사용(겹침 방지)
+ * - 존재하지 않는 번호는 새로 생성
+ * - 더이상 필요 없는 번호(범위 밖/skip)는 삭제
+ */
+function createMagnets(end = 35, skipNumbers = [7, 12]) {
+  const container = document.getElementById('magnetContainer');
+  const cols = 5, size = 50, gap = 15;
+  const offsetX = 50, offsetY = 500;
 
-        const x = c * (size + gap) + 50;
-        const y = r * (size + gap) + 500;
-        gridPos[n] = { left: x, top: y };
+  // 0) 중복 제거(한 번호에 하나만 남김)
+  dedupeMagnets();
 
-        // 항상 회색 자리표 생성 (배경)
-        createPlaceholder(n);
+  // 1) 생성 대상 번호 집합
+  const allowed = new Set();
+  for (let i = 1; i <= end; i++) if (!(skipNumbers||[]).includes(i)) allowed.add(i);
 
-        const m = document.createElement('div');
-        m.className = 'magnet';
-        const colorClass = getColorClass(n);
-        if (colorClass) m.classList.add(colorClass);
-
-        m.textContent = n;
-        m.dataset.number = n;
-        m.style.left = x + 'px';
-        m.style.top  = y + 'px';
-
-        container.appendChild(m);
-        addDragFunctionality(m);
-        n++;
+  // 2) 더이상 필요 없는 자석/자리표/좌표 제거
+  document.querySelectorAll('.magnet[data-number]:not(.placeholder)').forEach(m => {
+    const num = +m.dataset.number;
+    if (!allowed.has(num)) {
+      m.remove();
+    }
+  });
+  // placeholders, gridPos는 전역이라고 가정
+  if (typeof placeholders?.forEach === 'function') {
+    placeholders.forEach((p, numStr) => {
+      const num = +numStr;
+      if (!allowed.has(num)) {
+        try { p.remove(); } catch(_) {}
+        placeholders.delete(numStr);
       }
-    }
-
-    const total = container.querySelectorAll('.magnet:not(.placeholder)').length;
-    const tc = document.getElementById('total-count');
-    if (tc) tc.textContent = `${total}명`;
-
-    updateMagnetOutline();
-  }
-
-  /* ===================== 외곽선 ===================== */
-  function ensureMagnetOutline() {
-    const container = document.getElementById('magnetContainer');
-    let outline = document.getElementById('magnetOutline');
-    if (!outline) {
-      outline = document.createElement('div');
-      outline.id = 'magnetOutline';
-      outline.className = 'magnet-outline';
-      container.appendChild(outline);
-    }
-    return outline;
-  }
-
-  function updateMagnetOutline() {
-    const container = document.getElementById('magnetContainer');
-    const outline = ensureMagnetOutline();
-    const nodes = container.querySelectorAll('.magnet:not(.attached)');
-
-    if (!nodes.length) {
-      outline.style.display = 'none';
-      return;
-    }
-
-    let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity;
-    nodes.forEach(m => {
-      const left = parseFloat(m.style.left) || 0;
-      const top  = parseFloat(m.style.top)  || 0;
-      const w = m.offsetWidth  || 50;
-      const h = m.offsetHeight || 50;
-      minL = Math.min(minL, left);
-      minT = Math.min(minT, top);
-      maxR = Math.max(maxR, left + w);
-      maxB = Math.max(maxB, top  + h);
     });
-
-    const pad = 8;
-    outline.style.display = 'block';
-    outline.style.left   = (minL - pad) + 'px';
-    outline.style.top    = (minT - pad) + 'px';
-    outline.style.width  = (maxR - minL + pad * 2) + 'px';
-    outline.style.height = (maxB - minT + pad * 2) + 'px';
   }
+  Object.keys(gridPos).forEach(k => {
+    if (!allowed.has(+k)) delete gridPos[k];
+  });
+
+  // 3) 좌표 계산 + 존재 자석 재배치/생성
+  let r = 0, c = 0, cnt = 0;
+  for (let n = 1; n <= end; n++) {
+    if (!allowed.has(n)) continue;
+
+    const x = c * (size + gap) + offsetX;
+    const y = r * (size + gap) + offsetY;
+    gridPos[n] = { left: x, top: y };
+
+    // 자리표(placeholder) 생성/이동
+    if (!placeholders.has(n)) {
+      createPlaceholder(n);
+    } else {
+      const p = placeholders.get(n);
+      p.style.left = x + 'px';
+      p.style.top  = y + 'px';
+    }
+
+    // 자석이 이미 있으면 재사용, 없으면 생성
+    let el = document.querySelector(`.magnet[data-number="${n}"]:not(.placeholder)`);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'magnet';
+      el.textContent = n;
+      el.dataset.number = n;
+      container.appendChild(el);
+      addDragFunctionality(el);
+    }
+
+    // 색상 클래스 최신화
+    setColorClass(el, getColorClassDynamic(r));
+
+    // 붙어있지 않은 자석만(그리드에 있는 경우만) 좌표와 부모 보정
+    if (!el.classList.contains('attached')) {
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+      el.style.transform = 'translate(0,0)';
+      if (el.parentElement !== container) container.appendChild(el);
+    }
+
+    // 다음 칸
+    c++; if (c === cols) { c = 0; r++;}
+  }
+
+  // 4) 총원/외곽선 갱신
+  const total = document.querySelectorAll('.magnet[data-number]:not(.placeholder)').length;
+  const tc = document.getElementById('total-count');
+  if (tc) tc.textContent = `${total}명`;
+  updateMagnetOutline();
+}
+
 
   /* ===================== 출결 계산 ===================== */
   function updateAttendance() {
@@ -241,7 +273,16 @@
     let isDragging = false;
     let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
 
+    let dragFromCategory = 'grid';
+
     function dragStart(e) {
+      if (el.classList.contains('attached')) {
+        const sec = el.closest('.board-section');
+        dragFromCategory = sec ? sec.dataset.category : 'grid';
+      } else {
+        dragFromCategory = 'grid';
+      }
+
       if (el.classList.contains('attached')) {
         const rect = el.getBoundingClientRect();
         const container = document.getElementById('magnetContainer');
@@ -353,6 +394,9 @@
         }
       });
 
+      let toCategory = 'grid';
+
+
       if (targetSection) {
         const content = targetSection.querySelector('.section-content');
         el.classList.add('attached');
@@ -380,6 +424,8 @@
           delete el.dataset.reason;
           el.classList.remove('has-reason');
         }
+
+        toCategory = 'grid';
       }
 
       updateAttendance();
@@ -388,6 +434,18 @@
       saveState();
 
       document.querySelectorAll('.board-section').forEach(sec => sec.classList.remove('drag-over'));
+     
+      window.logEvent({
+        type: 'move',
+        grade: window.CLASS_INFO?.grade || 1,
+        klass: window.CLASS_INFO?.klass || 3,
+        user:  window.CLASS_INFO?.user  || 'teacher',
+        studentNo: Number(el.dataset.number),
+        from: dragFromCategory,
+        to: toCategory,
+        reason: toCategory === 'etc' ? (el.dataset.reason || '') : '',
+        clientTime: new Date().toISOString()
+      });
     }
 
     el.addEventListener('mousedown', dragStart);
